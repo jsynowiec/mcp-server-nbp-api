@@ -1,7 +1,7 @@
 // ABOUTME: TOON formatting helpers for tool responses.
 // ABOUTME: Centralizes encoding so tool handlers never assemble TOON strings directly.
 
-import type { TableType } from "#/types.js";
+import type { CurrencyListing, TableType } from "#/types.js";
 import { encode } from "@toon-format/toon";
 
 export interface HistoryStats {
@@ -125,6 +125,26 @@ export interface GoldPriceView {
 
 export function formatGoldPrice(view: GoldPriceView): string {
   return encode(stripUndefined(view));
+}
+
+export function formatCurrencyList(currencies: CurrencyListing[]): string {
+  return encode(currencies);
+}
+
+export interface ComparisonView {
+  table: TableType;
+  effectiveDate: string;
+  rows: MidTableRow[];
+  missing?: string[];
+}
+
+export function formatComparison(view: ComparisonView): string {
+  const header = `table: ${view.table}\neffectiveDate: ${view.effectiveDate}\n`;
+  let text = header + encode(view.rows);
+  if (view.missing && view.missing.length > 0) {
+    text += `\n\nNot found in Table ${view.table}: ${view.missing.join(", ")} — use list_currencies to see available codes.`;
+  }
+  return text;
 }
 
 function stripUndefined(obj: object): Record<string, unknown> {

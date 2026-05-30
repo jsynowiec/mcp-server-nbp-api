@@ -326,31 +326,53 @@ describe("compare_currencies", () => {
     expect(text).toMatch(/list_currencies/);
   });
 
-  test("rejects fewer than one code or more than ten codes", async () => {
+  test("rejects fewer than one code with isError and a min-element message", async () => {
     activePair = await setupPair();
 
-    const tooFew = await activePair.client
-      .callTool({
-        name: "compare_currencies",
-        arguments: { currencies: [] },
-      })
-      .catch((err: Error) => ({
-        isError: true,
-        content: [{ type: "text", text: err.message }],
-      }));
-    expect(tooFew.isError).toBe(true);
+    const result = await activePair.client.callTool({
+      name: "compare_currencies",
+      arguments: { currencies: [] },
+    });
 
-    const tooMany = await activePair.client
-      .callTool({
-        name: "compare_currencies",
-        arguments: {
-          currencies: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"],
-        },
-      })
-      .catch((err: Error) => ({
-        isError: true,
-        content: [{ type: "text", text: err.message }],
-      }));
-    expect(tooMany.isError).toBe(true);
+    expect(result.isError).toBe(true);
+    expect(getTextContent(result)).toMatch(/at least 1/i);
+  });
+
+  test("rejects more than ten codes with isError and a max-element message", async () => {
+    activePair = await setupPair();
+
+    const result = await activePair.client.callTool({
+      name: "compare_currencies",
+      arguments: {
+        currencies: [
+          "USD",
+          "EUR",
+          "GBP",
+          "CHF",
+          "JPY",
+          "CNY",
+          "CAD",
+          "AUD",
+          "NZD",
+          "SEK",
+          "NOK",
+        ],
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(getTextContent(result)).toMatch(/at most 10/i);
+  });
+
+  test("rejects currency codes that aren't 3 letters with isError", async () => {
+    activePair = await setupPair();
+
+    const result = await activePair.client.callTool({
+      name: "compare_currencies",
+      arguments: { currencies: ["USDOLLAR"] },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(getTextContent(result)).toMatch(/3-letter/i);
   });
 });

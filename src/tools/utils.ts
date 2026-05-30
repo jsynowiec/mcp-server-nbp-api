@@ -49,6 +49,11 @@ export function daysInclusive(start: string, end: string): number {
   return Math.round((endMs - startMs) / ONE_DAY_MS) + 1;
 }
 
+export function round(value: number, decimals: number): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
 export function validateDate(date: string, fieldName: string): void {
   if (!DATE_PATTERN.test(date)) {
     throw new Error(

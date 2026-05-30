@@ -7,27 +7,19 @@ import {
   formatExtremeResponse,
   formatGoldPrice,
   formatHistoryResponse,
-  type ExtremeStats,
   type GoldSeriesPoint,
-  type HistoryStats,
 } from "#/tools/format.js";
-import { chunkDateRange, daysInclusive, validateDate } from "#/tools/utils.js";
+import { err, ok } from "#/tools/result.js";
+import { computeExtremeStats, computeHistoryStats } from "#/tools/stats.js";
+import {
+  chunkDateRange,
+  daysInclusive,
+  round,
+  validateDate,
+} from "#/tools/utils.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-
-type ToolResult = {
-  content: Array<{ type: "text"; text: string }>;
-  isError?: boolean;
-};
-
-function ok(text: string): ToolResult {
-  return { content: [{ type: "text", text }] };
-}
-
-function err(text: string): ToolResult {
-  return { content: [{ type: "text", text }], isError: true };
-}
 
 const extremeEnum = z.enum(["min", "max", "both"]);
 const skipCacheSchema = z
@@ -157,7 +149,9 @@ export function registerGoldTools(
           );
         }
 
-        const stats = computeGoldStats(series);
+        const stats = computeHistoryStats(
+          series.map((p) => ({ date: p.date, value: p.price })),
+        );
         return ok(formatHistoryResponse(stats, { prices: series }));
       } catch (e) {
         if (e instanceof NbpApiError) {
@@ -253,73 +247,14 @@ export function registerGoldTools(
         );
       }
 
-      return ok(formatExtremeResponse(computeExtreme(series, mode)));
+      return ok(
+        formatExtremeResponse(
+          computeExtremeStats(
+            series.map((p) => ({ date: p.date, value: p.price })),
+            mode,
+          ),
+        ),
+      );
     },
   );
-}
-
-function computeGoldStats(series: GoldSeriesPoint[]): HistoryStats {
-  const first = series[0]!;
-  const last = series[series.length - 1]!;
-
-  let min = first.price;
-  let max = first.price;
-  let minDate = first.date;
-  let maxDate = first.date;
-  let sum = 0;
-
-  for (const point of series) {
-    if (point.price < min) {
-      min = point.price;
-      minDate = point.date;
-    }
-    if (point.price > max) {
-      max = point.price;
-      maxDate = point.date;
-    }
-    sum += point.price;
-  }
-
-  const avg = round(sum / series.length, 4);
-  const pct = ((last.price - first.price) / first.price) * 100;
-  const sign = pct >= 0 ? "+" : "";
-  const change = `${sign}${pct.toFixed(2)}% (${first.date} → ${last.date})`;
-
-  return { min, minDate, max, maxDate, avg, change };
-}
-
-function computeExtreme(
-  series: GoldSeriesPoint[],
-  mode: "min" | "max" | "both",
-): ExtremeStats {
-  const first = series[0]!;
-  let min = first.price;
-  let max = first.price;
-  let minDate = first.date;
-  let maxDate = first.date;
-
-  for (const point of series) {
-    if (point.price < min) {
-      min = point.price;
-      minDate = point.date;
-    }
-    if (point.price > max) {
-      max = point.price;
-      maxDate = point.date;
-    }
-  }
-
-  const dataPoints = series.length;
-  if (mode === "min") {
-    return { min, minDate, dataPoints };
-  }
-  if (mode === "max") {
-    return { max, maxDate, dataPoints };
-  }
-  return { min, minDate, max, maxDate, dataPoints };
-}
-
-function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
 }

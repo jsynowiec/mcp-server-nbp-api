@@ -8,30 +8,26 @@ import {
   formatConversion,
   formatExtremeResponse,
   formatTable,
-  type ExtremeStats,
 } from "#/tools/format.js";
-import { chunkDateRange, daysInclusive, validateDate } from "#/tools/utils.js";
+import { err, ok } from "#/tools/result.js";
+import { computeExtremeStats } from "#/tools/stats.js";
+import {
+  chunkDateRange,
+  daysInclusive,
+  round,
+  validateDate,
+} from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-type ToolResult = {
-  content: Array<{ type: "text"; text: string }>;
-  isError?: boolean;
-};
-
-function ok(text: string): ToolResult {
-  return { content: [{ type: "text", text }] };
-}
-
-function err(text: string): ToolResult {
-  return { content: [{ type: "text", text }], isError: true };
-}
-
 const tableEnum = z.enum(["A", "B", "C"]);
 const midTableEnum = z.enum(["A", "B"]);
 const extremeEnum = z.enum(["min", "max", "both"]);
+const currencyCodeSchema = z
+  .string()
+  .regex(/^[A-Za-z]{3}$/, "Expected a 3-letter ISO 4217 currency code");
 const skipCacheSchema = z
   .boolean()
   .optional()
@@ -136,9 +132,9 @@ export function registerExchangeTools(
         "Get the NBP bid (buy) and ask (sell) rates and spread for a currency from Table C. " +
         "Table C has significantly fewer currencies than A or B; for currencies not in C, use get_exchange_rate.",
       inputSchema: {
-        currency: z
-          .string()
-          .describe("ISO 4217 currency code (case-insensitive)."),
+        currency: currencyCodeSchema.describe(
+          "ISO 4217 currency code (case-insensitive).",
+        ),
         amount: z
           .number()
           .positive()
@@ -199,9 +195,12 @@ export function registerExchangeTools(
         );
       } catch (e) {
         if (e instanceof NbpApiError) {
-          if (e.statusCode === 404 && !date) {
+          if (e.statusCode === 404) {
+            const dateNote = date
+              ? ` for ${date} (or '${upperCode}' may not be in Table C)`
+              : "";
             return err(
-              `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
+              `'${upperCode}' is not available in Table C (buy/sell)${dateNote}. Use get_exchange_rate for the mid rate instead.`,
             );
           }
           return err(
@@ -230,16 +229,12 @@ export function registerExchangeTools(
           .number()
           .positive()
           .describe("Positive amount in from_currency to convert."),
-        from_currency: z
-          .string()
-          .describe(
-            "Source ISO 4217 currency code, or 'PLN' (case-insensitive).",
-          ),
-        to_currency: z
-          .string()
-          .describe(
-            "Target ISO 4217 currency code, or 'PLN' (case-insensitive).",
-          ),
+        from_currency: currencyCodeSchema.describe(
+          "Source ISO 4217 currency code, or 'PLN' (case-insensitive).",
+        ),
+        to_currency: currencyCodeSchema.describe(
+          "Target ISO 4217 currency code, or 'PLN' (case-insensitive).",
+        ),
         date: z
           .string()
           .optional()
@@ -387,9 +382,9 @@ export function registerExchangeTools(
         `Find the min and/or max mid rate for a currency over a date range up to ${FIND_EXTREME_MAX_DAYS} days. ` +
         "Auto-splits the range into ≤93-day chunks (the NBP single-query limit) and aggregates results.",
       inputSchema: {
-        currency: z
-          .string()
-          .describe("ISO 4217 currency code (case-insensitive)."),
+        currency: currencyCodeSchema.describe(
+          "ISO 4217 currency code (case-insensitive).",
+        ),
         start_date: z
           .string()
           .describe("Range start date (YYYY-MM-DD, Europe/Warsaw)."),
@@ -473,43 +468,14 @@ export function registerExchangeTools(
         );
       }
 
-      return ok(formatExtremeResponse(computeExtreme(series, mode)));
+      return ok(
+        formatExtremeResponse(
+          computeExtremeStats(
+            series.map((p) => ({ date: p.date, value: p.mid })),
+            mode,
+          ),
+        ),
+      );
     },
   );
-}
-
-function computeExtreme(
-  series: { date: string; mid: number }[],
-  mode: "min" | "max" | "both",
-): ExtremeStats {
-  const first = series[0]!;
-  let min = first.mid;
-  let max = first.mid;
-  let minDate = first.date;
-  let maxDate = first.date;
-
-  for (const point of series) {
-    if (point.mid < min) {
-      min = point.mid;
-      minDate = point.date;
-    }
-    if (point.mid > max) {
-      max = point.mid;
-      maxDate = point.date;
-    }
-  }
-
-  const dataPoints = series.length;
-  if (mode === "min") {
-    return { min, minDate, dataPoints };
-  }
-  if (mode === "max") {
-    return { max, maxDate, dataPoints };
-  }
-  return { min, minDate, max, maxDate, dataPoints };
-}
-
-function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
 }

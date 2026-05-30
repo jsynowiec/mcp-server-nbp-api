@@ -2,6 +2,7 @@
 // ABOUTME: Normalizes raw NBP payloads to the domain types in src/types.ts.
 
 import type {
+  CurrencyListing,
   ExchangeRate,
   ExchangeTable,
   GoldPrice,
@@ -29,11 +30,6 @@ interface RawGoldPrice {
 
 export interface RequestOptions {
   skipCache?: boolean;
-}
-
-export interface CurrencyListing {
-  code: string;
-  name: string;
 }
 
 type CachedValue = NonNullable<unknown>;
@@ -158,7 +154,8 @@ export class NbpApiClient {
     }
 
     const data = (await response.json()) as T;
-    if (!skipCache) {
+    const isEmptyArray = Array.isArray(data) && data.length === 0;
+    if (!skipCache && !isEmptyArray) {
       this.cache.set(path, data as CachedValue);
     }
     return data;

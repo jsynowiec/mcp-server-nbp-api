@@ -4,33 +4,24 @@
 import type { NbpApiClient } from "#/nbp-api.js";
 import { formatNbpApiError } from "#/tools/errors.js";
 import {
+  formatComparison,
+  formatCurrencyList,
   formatHistoryResponse,
   formatRate,
-  type HistoryStats,
-  type RateSeriesPoint,
 } from "#/tools/format.js";
-import { daysInclusive, validateDate } from "#/tools/utils.js";
+import { err, ok } from "#/tools/result.js";
+import { computeHistoryStats } from "#/tools/stats.js";
+import { daysInclusive, round, validateDate } from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { encode } from "@toon-format/toon";
 import { z } from "zod";
-
-type ToolResult = {
-  content: Array<{ type: "text"; text: string }>;
-  isError?: boolean;
-};
-
-function ok(text: string): ToolResult {
-  return { content: [{ type: "text", text }] };
-}
-
-function err(text: string): ToolResult {
-  return { content: [{ type: "text", text }], isError: true };
-}
 
 const tableEnum = z.enum(["A", "B", "C"]);
 const midTableEnum = z.enum(["A", "B"]);
+const currencyCodeSchema = z
+  .string()
+  .regex(/^[A-Za-z]{3}$/, "Expected a 3-letter ISO 4217 currency code");
 const skipCacheSchema = z
   .boolean()
   .optional()
@@ -64,7 +55,7 @@ export function registerRateTools(
         const currencies = await client.getCurrencies(effectiveTable, {
           skipCache: skipCache ?? false,
         });
-        return ok(encode(currencies));
+        return ok(formatCurrencyList(currencies));
       } catch (e) {
         if (e instanceof NbpApiError) {
           return err(
@@ -86,11 +77,9 @@ export function registerRateTools(
         "Get the current or historical mid exchange rate for a single currency against PLN. " +
         "Optionally convert an amount of that currency into PLN using the returned rate.",
       inputSchema: {
-        currency: z
-          .string()
-          .describe(
-            "ISO 4217 currency code (e.g. 'USD', 'EUR'). Case-insensitive.",
-          ),
+        currency: currencyCodeSchema.describe(
+          "ISO 4217 currency code (e.g. 'USD', 'EUR'). Case-insensitive.",
+        ),
         amount: z
           .number()
           .positive()
@@ -134,22 +123,24 @@ export function registerRateTools(
         );
         const quote = rate.rates[0];
         if (!quote || quote.mid === undefined) {
-          return err(
-            `NBP returned an empty rate payload for ${upperCode} on ${date ?? "the latest date"}.`,
+          throw new NbpApiError(
+            502,
+            `empty rate payload for ${upperCode} on ${date ?? "the latest date"}`,
           );
         }
         const mid = quote.mid;
-        const text = formatRate({
-          table: effectiveTable,
-          code: rate.code,
-          currency: rate.currency,
-          mid,
-          effectiveDate: quote.effectiveDate,
-          ...(amount !== undefined
-            ? { amount, plnValue: round(amount * mid, 4) }
-            : {}),
-        });
-        return ok(text);
+        return ok(
+          formatRate({
+            table: effectiveTable,
+            code: rate.code,
+            currency: rate.currency,
+            mid,
+            effectiveDate: quote.effectiveDate,
+            ...(amount !== undefined
+              ? { amount, plnValue: round(amount * mid, 4) }
+              : {}),
+          }),
+        );
       } catch (e) {
         if (e instanceof NbpApiError) {
           return err(
@@ -174,9 +165,9 @@ export function registerRateTools(
         "Returns summary statistics (min, max, average, first-to-last percent change) and the full series. " +
         "For ranges longer than 93 days, use find_rate_extreme.",
       inputSchema: {
-        currency: z
-          .string()
-          .describe("ISO 4217 currency code. Case-insensitive."),
+        currency: currencyCodeSchema.describe(
+          "ISO 4217 currency code. Case-insensitive.",
+        ),
         start_date: z
           .string()
           .describe("Range start date (YYYY-MM-DD, Europe/Warsaw)."),
@@ -223,7 +214,7 @@ export function registerRateTools(
           { skipCache: skipCache ?? false },
         );
 
-        const series: RateSeriesPoint[] = history.rates
+        const series = history.rates
           .filter((q): q is typeof q & { mid: number } => q.mid !== undefined)
           .map((q) => ({ date: q.effectiveDate, mid: q.mid }));
 
@@ -233,7 +224,9 @@ export function registerRateTools(
           );
         }
 
-        const stats = computeRateStats(series);
+        const stats = computeHistoryStats(
+          series.map((p) => ({ date: p.date, value: p.mid })),
+        );
         return ok(formatHistoryResponse(stats, { rates: series }));
       } catch (e) {
         if (e instanceof NbpApiError) {
@@ -260,7 +253,7 @@ export function registerRateTools(
         "Returns a TOON table sorted by rate, plus a note listing any requested codes not present in the chosen table.",
       inputSchema: {
         currencies: z
-          .array(z.string())
+          .array(currencyCodeSchema)
           .min(1)
           .max(10)
           .describe(
@@ -321,12 +314,14 @@ export function registerRateTools(
           );
         }
 
-        const header = `effectiveDate: ${snapshot.effectiveDate}\ntable: ${snapshot.table}\n`;
-        let text = header + encode(matched);
-        if (missing.length > 0) {
-          text += `\n\nNot found in Table ${effectiveTable}: ${missing.join(", ")} — use list_currencies to see available codes.`;
-        }
-        return ok(text);
+        return ok(
+          formatComparison({
+            table: snapshot.table,
+            effectiveDate: snapshot.effectiveDate,
+            rows: matched,
+            ...(missing.length > 0 ? { missing } : {}),
+          }),
+        );
       } catch (e) {
         if (e instanceof NbpApiError) {
           return err(
@@ -341,39 +336,4 @@ export function registerRateTools(
       }
     },
   );
-}
-
-function computeRateStats(series: RateSeriesPoint[]): HistoryStats {
-  const first = series[0]!;
-  const last = series[series.length - 1]!;
-
-  let min = first.mid;
-  let max = first.mid;
-  let minDate = first.date;
-  let maxDate = first.date;
-  let sum = 0;
-
-  for (const point of series) {
-    if (point.mid < min) {
-      min = point.mid;
-      minDate = point.date;
-    }
-    if (point.mid > max) {
-      max = point.mid;
-      maxDate = point.date;
-    }
-    sum += point.mid;
-  }
-
-  const avg = round(sum / series.length, 4);
-  const pct = ((last.mid - first.mid) / first.mid) * 100;
-  const sign = pct >= 0 ? "+" : "";
-  const change = `${sign}${pct.toFixed(2)}% (${first.date} → ${last.date})`;
-
-  return { min, minDate, max, maxDate, avg, change };
-}
-
-function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
 }

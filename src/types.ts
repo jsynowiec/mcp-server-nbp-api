@@ -38,6 +38,11 @@ export interface GoldPrice {
   price: number;
 }
 
+export interface CurrencyListing {
+  code: string;
+  name: string;
+}
+
 export class NbpApiError extends Error {
   readonly statusCode: number;
 

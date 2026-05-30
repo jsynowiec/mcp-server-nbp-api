@@ -31,7 +31,8 @@ export function formatNbpApiError(
       return `No NBP data for ${date}. NBP publishes on business days only (Mon–Fri, excluding Polish public holidays). Try the nearest preceding business day.`;
     }
     if (rangeStart && rangeEnd) {
-      return `No NBP data in the range ${rangeStart} → ${rangeEnd}. NBP publishes on business days only and the requested range may include no published values.`;
+      const subject = code ? `${code} in the range` : "the range";
+      return `No NBP data for ${subject} ${rangeStart} → ${rangeEnd}. NBP publishes on business days only and the requested range may include no published values.`;
     }
     return `NBP returned 404 Not Found for the requested ${resource}.`;
   }
@@ -42,6 +43,10 @@ export function formatNbpApiError(
 
   if (err.statusCode === 0) {
     return `NBP API network error: ${err.message}. Try again.`;
+  }
+
+  if (err.statusCode === 502) {
+    return `Unexpected NBP response shape: ${err.message}`;
   }
 
   return `NBP API error (${err.statusCode}): ${err.message}`;
