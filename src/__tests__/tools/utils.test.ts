@@ -23,12 +23,17 @@ describe("chunkDateRange", () => {
   test("splits when the range exceeds maxDays, with contiguous non-overlapping chunks", () => {
     const chunks = chunkDateRange("2024-01-01", "2024-12-31", 93);
     expect(chunks.length).toBeGreaterThan(1);
-    expect(chunks[0][0]).toBe("2024-01-01");
-    expect(chunks[chunks.length - 1][1]).toBe("2024-12-31");
+
+    const first = chunks[0]!;
+    const last = chunks[chunks.length - 1]!;
+    expect(first[0]).toBe("2024-01-01");
+    expect(last[1]).toBe("2024-12-31");
 
     for (let i = 1; i < chunks.length; i++) {
-      const prevEnd = new Date(chunks[i - 1][1] + "T00:00:00Z");
-      const curStart = new Date(chunks[i][0] + "T00:00:00Z");
+      const prev = chunks[i - 1]!;
+      const cur = chunks[i]!;
+      const prevEnd = new Date(prev[1] + "T00:00:00Z");
+      const curStart = new Date(cur[0] + "T00:00:00Z");
       const gapMs = curStart.getTime() - prevEnd.getTime();
       expect(gapMs).toBe(24 * 60 * 60 * 1000);
     }
