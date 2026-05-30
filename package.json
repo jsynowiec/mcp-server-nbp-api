@@ -1,0 +1,57 @@
+{
+  "name": "@jsynowiec/mcp-server-nbp-api",
+  "version": "0.1.0",
+  "description": "MCP server for the NBP (National Bank of Poland) Web API: exchange rates and gold prices.",
+  "license": "MIT",
+  "author": "Jakub Synowiec",
+  "type": "module",
+  "bin": {
+    "mcp-server-nbp-api": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint .",
+    "format": "prettier --write src",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "dev:test": "bun test --watch",
+    "prepublishOnly": "bun run build && bun run lint && bun run typecheck && bun run test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@toon-format/toon": "^2.3.0",
+    "lru-cache": "^11.4.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.12.4",
+    "eslint": "^10.4.0",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsynowiec/mcp-server-nbp-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jsynowiec/mcp-server-nbp-api/issues"
+  },
+  "homepage": "https://github.com/jsynowiec/mcp-server-nbp-api#readme",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "nbp",
+    "exchange-rates",
+    "gold-prices",
+    "pln"
+  ]
+}

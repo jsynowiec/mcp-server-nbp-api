@@ -1,1 +1,12 @@
 *.local.*
+
+node_modules/
+dist/
+
+# Bun
+.bun-cache/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
