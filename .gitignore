@@ -1,1 +1,5 @@
 *.local.*
+
+# Worktrees (native and fallback paths)
+.claude/worktrees/
+.worktrees/
