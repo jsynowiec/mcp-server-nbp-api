@@ -1,12 +1,8 @@
 // ABOUTME: Unit tests for date utilities used by tool handlers.
 // ABOUTME: Covers range chunking, Warsaw-local "today", and date validation.
 
+import { chunkDateRange, getWarsawToday, validateDate } from "@/tools/utils.js";
 import { describe, expect, test } from "bun:test";
-import {
-  chunkDateRange,
-  getWarsawToday,
-  validateDate,
-} from "../../src/tools/utils.js";
 
 describe("chunkDateRange", () => {
   test("returns one chunk when the range fits within maxDays", () => {

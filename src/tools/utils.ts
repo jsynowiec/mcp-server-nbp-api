@@ -30,7 +30,8 @@ export function chunkDateRange(
 
   while (cursor.getTime() <= endDate.getTime()) {
     const chunkEnd = new Date(cursor.getTime() + (maxDays - 1) * ONE_DAY_MS);
-    const cappedEnd = chunkEnd.getTime() > endDate.getTime() ? endDate : chunkEnd;
+    const cappedEnd =
+      chunkEnd.getTime() > endDate.getTime() ? endDate : chunkEnd;
     chunks.push([formatIsoDate(cursor), formatIsoDate(cappedEnd)]);
     cursor = new Date(cappedEnd.getTime() + ONE_DAY_MS);
   }
