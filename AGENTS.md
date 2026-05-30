@@ -21,6 +21,16 @@ Documented in [docs/adr/](docs/adr/README.md). When a significant architectural 
 - No real API calls in tests
 - `createServer()` in `src/server.ts` wires everything without connecting a transport — tests import it directly, `src/index.ts` is a pure CLI runner
 
+## Completion Checks
+
+When finishing work, run the linter and format checks:
+
+```sh
+bun run lint
+bun run fmtcheck
+bun run typecheck
+```
+
 ## NBP API gotchas
 
 - NBP publishes rates and gold prices on business days only (Mon–Fri, excluding Polish public holidays). A 404 on a weekend or holiday date is expected, not an error in the server.

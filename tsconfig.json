@@ -5,12 +5,12 @@
     "lib": ["ESNext"],
     "moduleResolution": "bundler",
     "moduleDetection": "force",
+    "types": ["bun"],
     "outDir": "dist",
     "noEmit": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["bun"],
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
@@ -18,5 +18,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests"],
 }

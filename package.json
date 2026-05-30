@@ -17,7 +17,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
-    "format": "prettier --write src",
+    "format": "prettier --write src tests",
+    "fmtcheck": "prettier --check src tests",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "dev:test": "bun test --watch",
@@ -36,6 +37,7 @@
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
     "prettier": "^3.8.3",
+    "prettier-plugin-organize-imports": "^4.3.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.4"
   },
