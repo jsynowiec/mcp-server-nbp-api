@@ -6,7 +6,7 @@ import {
   chunkDateRange,
   getWarsawToday,
   validateDate,
-} from "../../tools/utils.js";
+} from "../../src/tools/utils.js";
 
 describe("chunkDateRange", () => {
   test("returns one chunk when the range fits within maxDays", () => {

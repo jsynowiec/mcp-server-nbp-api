@@ -20,6 +20,6 @@ Keeping MCP registration code separate from the HTTP client lets the API client 
 ## Consequences
 
 - API client is testable without MCP protocol overhead
-- Test directory mirrors `src/` structure: `src/__tests__/tools/{rates,exchange,gold,utils}.test.ts`
+- Test directory mirrors `src/` structure: `tests/tools/{rates,exchange,gold,utils}.test.ts`
 - Format helpers live in `src/tools/format.ts`; tool handlers never write raw TOON strings
 - `createServer()` takes no configuration parameter since the NBP API requires no authentication

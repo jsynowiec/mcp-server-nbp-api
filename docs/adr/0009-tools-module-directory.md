@@ -18,5 +18,5 @@ With 11 tools split across three domains (currency rates, exchange-table/transac
 ## Consequences
 
 - Each file stays focused on one domain or concern
-- Tests mirror the same split under `src/__tests__/tools/{rates,exchange,gold,utils}.test.ts`
+- Tests mirror the same split under `tests/tools/{rates,exchange,gold,utils}.test.ts`
 - A new tool that does not fit cleanly into rates/exchange/gold forces a deliberate decision about which module owns it — there is no `misc.ts` escape hatch
