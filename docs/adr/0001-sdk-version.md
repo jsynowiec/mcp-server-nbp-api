@@ -2,6 +2,8 @@
 
 ## Context
 
+This server exposes the NBP Web API to LLM agents over MCP. The SDK version chosen determines import paths, the schema validation library, and protocol compatibility with downstream clients.
+
 The MCP TypeScript SDK has v1 stable (`@modelcontextprotocol/sdk`, Zod v3) and v2 alpha (`@modelcontextprotocol/server`, Zod v4). The v2 alpha has a cleaner API but no production adoption yet.
 
 ## Decision

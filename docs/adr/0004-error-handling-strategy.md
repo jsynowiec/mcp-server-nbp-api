@@ -14,3 +14,4 @@ Rate limits are NOT proactively surfaced — most requests hit the cache, so hea
 
 - The LLM always gets a response it can reason about, even on errors
 - Rate limit exhaustion is only visible when it actually occurs
+- Domain-specific error messages include actionable hints (e.g., "NBP publishes on business days only — try the nearest preceding business day", "Use `find_rate_extreme` for ranges over 93 days") so the agent can retry intelligently without human intervention

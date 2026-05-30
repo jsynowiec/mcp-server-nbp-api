@@ -3,3 +3,14 @@
 # Worktrees (native and fallback paths)
 .claude/worktrees/
 .worktrees/
+
+node_modules/
+dist/
+
+# Bun
+.bun-cache/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
