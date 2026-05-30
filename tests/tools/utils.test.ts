@@ -1,7 +1,12 @@
 // ABOUTME: Unit tests for date utilities used by tool handlers.
 // ABOUTME: Covers range chunking, Warsaw-local "today", and date validation.
 
-import { chunkDateRange, getWarsawToday, validateDate } from "@/tools/utils.js";
+import {
+  chunkDateRange,
+  daysInclusive,
+  getWarsawToday,
+  validateDate,
+} from "@/tools/utils.js";
 import { describe, expect, test } from "bun:test";
 
 describe("chunkDateRange", () => {
@@ -45,6 +50,20 @@ describe("chunkDateRange", () => {
   test("returns a single-day chunk when start equals end", () => {
     const chunks = chunkDateRange("2024-06-15", "2024-06-15", 93);
     expect(chunks).toEqual([["2024-06-15", "2024-06-15"]]);
+  });
+});
+
+describe("daysInclusive", () => {
+  test("returns 1 for the same start and end date", () => {
+    expect(daysInclusive("2024-06-15", "2024-06-15")).toBe(1);
+  });
+
+  test("returns 93 for a 93-day inclusive range", () => {
+    expect(daysInclusive("2024-01-01", "2024-04-02")).toBe(93);
+  });
+
+  test("returns 366 for a full leap year", () => {
+    expect(daysInclusive("2024-01-01", "2024-12-31")).toBe(366);
   });
 });
 

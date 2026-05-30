@@ -43,6 +43,12 @@ export function getWarsawToday(): string {
   return warsawDateFormatter.format(new Date());
 }
 
+export function daysInclusive(start: string, end: string): number {
+  const startMs = parseIsoDate(start).getTime();
+  const endMs = parseIsoDate(end).getTime();
+  return Math.round((endMs - startMs) / ONE_DAY_MS) + 1;
+}
+
 export function validateDate(date: string, fieldName: string): void {
   if (!DATE_PATTERN.test(date)) {
     throw new Error(
