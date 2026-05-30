@@ -3,38 +3,10 @@
 
 import { NbpApiClient } from "@/nbp-api.js";
 import { NbpApiError } from "@/types.js";
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-
-type FetchInput = Parameters<typeof globalThis.fetch>[0];
-type FetchInit = Parameters<typeof globalThis.fetch>[1];
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { installFetch, jsonResponse } from "./helpers/fetch.js";
 
 const ORIGINAL_FETCH = globalThis.fetch;
-
-interface MockCall {
-  url: string;
-  init: FetchInit;
-}
-
-function installFetch(handler: (url: string) => Response | Promise<Response>): {
-  calls: MockCall[];
-  fn: ReturnType<typeof mock>;
-} {
-  const calls: MockCall[] = [];
-  const fn = mock(async (input: FetchInput, init?: FetchInit) => {
-    const url = typeof input === "string" ? input : input.toString();
-    calls.push({ url, init });
-    return handler(url);
-  });
-  globalThis.fetch = fn as unknown as typeof globalThis.fetch;
-  return { calls, fn };
-}
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
 
 const TABLE_A_PAYLOAD = [
   {
