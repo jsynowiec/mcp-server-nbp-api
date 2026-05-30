@@ -9,6 +9,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "types": ["bun", "node"],
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
