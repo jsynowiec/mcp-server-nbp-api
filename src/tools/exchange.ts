@@ -1,0 +1,515 @@
+// ABOUTME: Registers the exchange tools: get_exchange_table, get_bid_ask_rates,
+// ABOUTME: convert_currency, find_rate_extreme. Last one auto-splits the 93-day NBP limit.
+
+import type { NbpApiClient } from "#/nbp-api.js";
+import { formatNbpApiError } from "#/tools/errors.js";
+import {
+  formatBidAsk,
+  formatConversion,
+  formatExtremeResponse,
+  formatTable,
+  type ExtremeStats,
+} from "#/tools/format.js";
+import { chunkDateRange, daysInclusive, validateDate } from "#/tools/utils.js";
+import type { TableType } from "#/types.js";
+import { NbpApiError } from "#/types.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+
+type ToolResult = {
+  content: Array<{ type: "text"; text: string }>;
+  isError?: boolean;
+};
+
+function ok(text: string): ToolResult {
+  return { content: [{ type: "text", text }] };
+}
+
+function err(text: string): ToolResult {
+  return { content: [{ type: "text", text }], isError: true };
+}
+
+const tableEnum = z.enum(["A", "B", "C"]);
+const midTableEnum = z.enum(["A", "B"]);
+const extremeEnum = z.enum(["min", "max", "both"]);
+const skipCacheSchema = z
+  .boolean()
+  .optional()
+  .describe(
+    "Bypass the in-process cache and fetch a fresh value from NBP. Default: false.",
+  );
+
+const FIND_EXTREME_MAX_DAYS = 366;
+const HISTORY_CHUNK_DAYS = 93;
+
+export function registerExchangeTools(
+  server: McpServer,
+  client: NbpApiClient,
+): void {
+  server.registerTool(
+    "get_exchange_table",
+    {
+      description:
+        "Get the full NBP exchange-rate table for a given date (or the most recent published one). " +
+        "Tables A and B return mid rates; Table C returns bid/ask quotes.",
+      inputSchema: {
+        table: tableEnum
+          .optional()
+          .describe(
+            "Exchange-rate table: A (default, mid rates, major currencies), B (mid rates, extended set), or C (bid/ask, major currencies).",
+          ),
+        date: z
+          .string()
+          .optional()
+          .describe(
+            "Optional YYYY-MM-DD date (Europe/Warsaw). Omit for the latest published table.",
+          ),
+        skipCache: skipCacheSchema,
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ table, date, skipCache }) => {
+      const effectiveTable: TableType = table ?? "A";
+
+      if (date !== undefined) {
+        try {
+          validateDate(date, "date");
+        } catch (e) {
+          return err((e as Error).message);
+        }
+      }
+
+      try {
+        const snapshot = await client.getExchangeTable(effectiveTable, date, {
+          skipCache: skipCache ?? false,
+        });
+
+        const rows =
+          effectiveTable === "C"
+            ? snapshot.rates
+                .filter(
+                  (r): r is typeof r & { bid: number; ask: number } =>
+                    r.bid !== undefined && r.ask !== undefined,
+                )
+                .map((r) => ({
+                  code: r.code,
+                  currency: r.currency,
+                  bid: r.bid,
+                  ask: r.ask,
+                }))
+            : snapshot.rates
+                .filter(
+                  (r): r is typeof r & { mid: number } => r.mid !== undefined,
+                )
+                .map((r) => ({
+                  code: r.code,
+                  currency: r.currency,
+                  mid: r.mid,
+                }));
+
+        return ok(
+          formatTable({
+            table: snapshot.table,
+            effectiveDate: snapshot.effectiveDate,
+            rows,
+          }),
+        );
+      } catch (e) {
+        if (e instanceof NbpApiError) {
+          return err(
+            formatNbpApiError(e, {
+              resource: "table",
+              table: effectiveTable,
+              date,
+            }),
+          );
+        }
+        throw e;
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_bid_ask_rates",
+    {
+      description:
+        "Get the NBP bid (buy) and ask (sell) rates and spread for a currency from Table C. " +
+        "Table C has significantly fewer currencies than A or B; for currencies not in C, use get_exchange_rate.",
+      inputSchema: {
+        currency: z
+          .string()
+          .describe("ISO 4217 currency code (case-insensitive)."),
+        amount: z
+          .number()
+          .positive()
+          .optional()
+          .describe(
+            "Optional amount to multiply by bid and ask, returning total PLN.",
+          ),
+        date: z
+          .string()
+          .optional()
+          .describe(
+            "Optional YYYY-MM-DD date. Omit for the latest published quote.",
+          ),
+        skipCache: skipCacheSchema,
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ currency, amount, date, skipCache }) => {
+      const upperCode = currency.toUpperCase();
+
+      if (date !== undefined) {
+        try {
+          validateDate(date, "date");
+        } catch (e) {
+          return err((e as Error).message);
+        }
+      }
+
+      try {
+        const rate = await client.getExchangeRate("C", upperCode, date, {
+          skipCache: skipCache ?? false,
+        });
+        const quote = rate.rates[0];
+        if (!quote || quote.bid === undefined || quote.ask === undefined) {
+          return err(
+            `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
+          );
+        }
+        const bid = quote.bid;
+        const ask = quote.ask;
+        return ok(
+          formatBidAsk({
+            table: "C",
+            code: rate.code,
+            currency: rate.currency,
+            bid,
+            ask,
+            spread: round(ask - bid, 4),
+            effectiveDate: quote.effectiveDate,
+            ...(amount !== undefined
+              ? {
+                  amount,
+                  totalBuyPln: round(amount * bid, 4),
+                  totalSellPln: round(amount * ask, 4),
+                }
+              : {}),
+          }),
+        );
+      } catch (e) {
+        if (e instanceof NbpApiError) {
+          if (e.statusCode === 404 && !date) {
+            return err(
+              `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
+            );
+          }
+          return err(
+            formatNbpApiError(e, {
+              resource: "rate",
+              table: "C",
+              code: upperCode,
+              date,
+            }),
+          );
+        }
+        throw e;
+      }
+    },
+  );
+
+  server.registerTool(
+    "convert_currency",
+    {
+      description:
+        "Convert an amount between two currencies using NBP mid rates. " +
+        "Supports any direction: foreign↔PLN or cross-currency (foreign↔foreign via PLN). " +
+        "Returns the reference mid rate — use get_bid_ask_rates for actual bank transaction rates.",
+      inputSchema: {
+        amount: z
+          .number()
+          .positive()
+          .describe("Positive amount in from_currency to convert."),
+        from_currency: z
+          .string()
+          .describe(
+            "Source ISO 4217 currency code, or 'PLN' (case-insensitive).",
+          ),
+        to_currency: z
+          .string()
+          .describe(
+            "Target ISO 4217 currency code, or 'PLN' (case-insensitive).",
+          ),
+        date: z
+          .string()
+          .optional()
+          .describe(
+            "Optional YYYY-MM-DD date. Omit for the latest published rates.",
+          ),
+        table: midTableEnum
+          .optional()
+          .describe(
+            "Mid-rate table: A (default) or B. Table B covers ~130 currencies.",
+          ),
+        skipCache: skipCacheSchema,
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ amount, from_currency, to_currency, date, table, skipCache }) => {
+      const from = from_currency.toUpperCase();
+      const to = to_currency.toUpperCase();
+      const effectiveTable: TableType = table ?? "A";
+
+      if (date !== undefined) {
+        try {
+          validateDate(date, "date");
+        } catch (e) {
+          return err((e as Error).message);
+        }
+      }
+
+      if (from === to) {
+        return ok(
+          formatConversion({
+            amount,
+            from,
+            to,
+            rate: 1,
+            result: amount,
+            effectiveDate: null,
+          }),
+        );
+      }
+
+      const opts = { skipCache: skipCache ?? false };
+      const note =
+        "Reference mid rate — use get_bid_ask_rates for actual bank transaction rates.";
+
+      try {
+        if (from === "PLN") {
+          const rate = await client.getExchangeRate(
+            effectiveTable,
+            to,
+            date,
+            opts,
+          );
+          const quote = rate.rates[0];
+          if (!quote || quote.mid === undefined) {
+            return err(`No NBP mid rate available for ${to}.`);
+          }
+          const conversionRate = 1 / quote.mid;
+          return ok(
+            formatConversion({
+              amount,
+              from: "PLN",
+              to,
+              rate: round(conversionRate, 6),
+              result: round(amount * conversionRate, 4),
+              effectiveDate: quote.effectiveDate,
+              note,
+            }),
+          );
+        }
+
+        if (to === "PLN") {
+          const rate = await client.getExchangeRate(
+            effectiveTable,
+            from,
+            date,
+            opts,
+          );
+          const quote = rate.rates[0];
+          if (!quote || quote.mid === undefined) {
+            return err(`No NBP mid rate available for ${from}.`);
+          }
+          return ok(
+            formatConversion({
+              amount,
+              from,
+              to: "PLN",
+              rate: quote.mid,
+              result: round(amount * quote.mid, 4),
+              effectiveDate: quote.effectiveDate,
+              note,
+            }),
+          );
+        }
+
+        const [sourceRate, targetRate] = await Promise.all([
+          client.getExchangeRate(effectiveTable, from, date, opts),
+          client.getExchangeRate(effectiveTable, to, date, opts),
+        ]);
+        const sourceQuote = sourceRate.rates[0];
+        const targetQuote = targetRate.rates[0];
+        if (
+          !sourceQuote ||
+          sourceQuote.mid === undefined ||
+          !targetQuote ||
+          targetQuote.mid === undefined
+        ) {
+          return err(`No NBP mid rate available for ${from} or ${to}.`);
+        }
+        const sourceMid = sourceQuote.mid;
+        const targetMid = targetQuote.mid;
+        const crossRate = sourceMid / targetMid;
+        return ok(
+          formatConversion({
+            amount,
+            from,
+            to,
+            rate: round(crossRate, 6),
+            result: round(amount * crossRate, 4),
+            effectiveDate: sourceQuote.effectiveDate,
+            sourceMid,
+            targetMid,
+            note,
+          }),
+        );
+      } catch (e) {
+        if (e instanceof NbpApiError) {
+          return err(
+            formatNbpApiError(e, {
+              resource: "rate",
+              table: effectiveTable,
+              date,
+            }),
+          );
+        }
+        throw e;
+      }
+    },
+  );
+
+  server.registerTool(
+    "find_rate_extreme",
+    {
+      description:
+        `Find the min and/or max mid rate for a currency over a date range up to ${FIND_EXTREME_MAX_DAYS} days. ` +
+        "Auto-splits the range into ≤93-day chunks (the NBP single-query limit) and aggregates results.",
+      inputSchema: {
+        currency: z
+          .string()
+          .describe("ISO 4217 currency code (case-insensitive)."),
+        start_date: z
+          .string()
+          .describe("Range start date (YYYY-MM-DD, Europe/Warsaw)."),
+        end_date: z
+          .string()
+          .describe("Range end date (YYYY-MM-DD, Europe/Warsaw)."),
+        extreme: extremeEnum
+          .optional()
+          .describe(
+            "Which extreme to compute: 'min', 'max', or 'both' (default).",
+          ),
+        table: midTableEnum
+          .optional()
+          .describe("Mid-rate table: A (default) or B."),
+        skipCache: skipCacheSchema,
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ currency, start_date, end_date, extreme, table, skipCache }) => {
+      const upperCode = currency.toUpperCase();
+      const effectiveTable: TableType = table ?? "A";
+      const mode = extreme ?? "both";
+
+      try {
+        validateDate(start_date, "start_date");
+        validateDate(end_date, "end_date");
+      } catch (e) {
+        return err((e as Error).message);
+      }
+
+      if (start_date > end_date) {
+        return err(
+          `start_date '${start_date}' must be on or before end_date '${end_date}'.`,
+        );
+      }
+
+      const span = daysInclusive(start_date, end_date);
+      if (span > FIND_EXTREME_MAX_DAYS) {
+        return err(
+          `Date range of ${span} days exceeds the ${FIND_EXTREME_MAX_DAYS}-day limit for find_rate_extreme.`,
+        );
+      }
+
+      const chunks = chunkDateRange(start_date, end_date, HISTORY_CHUNK_DAYS);
+      const opts = { skipCache: skipCache ?? false };
+      const series: { date: string; mid: number }[] = [];
+
+      try {
+        for (const [chunkStart, chunkEnd] of chunks) {
+          const history = await client.getExchangeRateHistory(
+            effectiveTable,
+            upperCode,
+            chunkStart,
+            chunkEnd,
+            opts,
+          );
+          for (const q of history.rates) {
+            if (q.mid !== undefined) {
+              series.push({ date: q.effectiveDate, mid: q.mid });
+            }
+          }
+        }
+      } catch (e) {
+        if (e instanceof NbpApiError) {
+          return err(
+            formatNbpApiError(e, {
+              resource: "rate",
+              table: effectiveTable,
+              code: upperCode,
+              rangeStart: start_date,
+              rangeEnd: end_date,
+            }),
+          );
+        }
+        throw e;
+      }
+
+      if (series.length === 0) {
+        return err(
+          `No NBP data in the range ${start_date} → ${end_date} for ${upperCode}. NBP publishes on business days only.`,
+        );
+      }
+
+      return ok(formatExtremeResponse(computeExtreme(series, mode)));
+    },
+  );
+}
+
+function computeExtreme(
+  series: { date: string; mid: number }[],
+  mode: "min" | "max" | "both",
+): ExtremeStats {
+  const first = series[0]!;
+  let min = first.mid;
+  let max = first.mid;
+  let minDate = first.date;
+  let maxDate = first.date;
+
+  for (const point of series) {
+    if (point.mid < min) {
+      min = point.mid;
+      minDate = point.date;
+    }
+    if (point.mid > max) {
+      max = point.mid;
+      maxDate = point.date;
+    }
+  }
+
+  const dataPoints = series.length;
+  if (mode === "min") {
+    return { min, minDate, dataPoints };
+  }
+  if (mode === "max") {
+    return { max, maxDate, dataPoints };
+  }
+  return { min, minDate, max, maxDate, dataPoints };
+}
+
+function round(value: number, decimals: number): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
