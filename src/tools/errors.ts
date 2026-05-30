@@ -1,9 +1,9 @@
 // ABOUTME: Maps NbpApiError instances to user-facing tool result text.
 // ABOUTME: Centralizes the wording the LLM sees so hints stay consistent across tools.
 
-import { getWarsawToday } from "@/tools/utils.js";
-import type { TableType } from "@/types.js";
-import { NbpApiError } from "@/types.js";
+import { getWarsawToday } from "#/tools/utils.js";
+import type { TableType } from "#/types.js";
+import { NbpApiError } from "#/types.js";
 
 export interface NbpErrorContext {
   resource: "rate" | "table" | "gold";

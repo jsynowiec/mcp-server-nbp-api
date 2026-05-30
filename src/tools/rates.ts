@@ -1,17 +1,17 @@
 // ABOUTME: Registers the rate-lookup tools: list_currencies, get_exchange_rate,
 // ABOUTME: get_rate_history, compare_currencies. All responses are TOON-encoded.
 
-import type { NbpApiClient } from "@/nbp-api.js";
-import { formatNbpApiError } from "@/tools/errors.js";
+import type { NbpApiClient } from "#/nbp-api.js";
+import { formatNbpApiError } from "#/tools/errors.js";
 import {
   formatHistoryResponse,
   formatRate,
   type HistoryStats,
   type RateSeriesPoint,
-} from "@/tools/format.js";
-import { daysInclusive, validateDate } from "@/tools/utils.js";
-import type { TableType } from "@/types.js";
-import { NbpApiError } from "@/types.js";
+} from "#/tools/format.js";
+import { daysInclusive, validateDate } from "#/tools/utils.js";
+import type { TableType } from "#/types.js";
+import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { encode } from "@toon-format/toon";
 import { z } from "zod";

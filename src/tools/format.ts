@@ -1,7 +1,7 @@
 // ABOUTME: TOON formatting helpers for tool responses.
 // ABOUTME: Centralizes encoding so tool handlers never assemble TOON strings directly.
 
-import type { TableType } from "@/types.js";
+import type { TableType } from "#/types.js";
 import { encode } from "@toon-format/toon";
 
 export interface HistoryStats {
@@ -14,10 +14,10 @@ export interface HistoryStats {
 }
 
 export interface ExtremeStats {
-  min: number;
-  minDate: string;
-  max: number;
-  maxDate: string;
+  min?: number;
+  minDate?: string;
+  max?: number;
+  maxDate?: string;
   dataPoints: number;
 }
 
@@ -43,7 +43,23 @@ export function formatHistoryResponse(
 }
 
 export function formatExtremeResponse(stats: ExtremeStats): string {
-  return encode({ stats });
+  return encode({ stats: stripUndefined(stats) });
+}
+
+export interface ConversionView {
+  amount: number;
+  from: string;
+  to: string;
+  rate: number;
+  result: number;
+  effectiveDate: string | null;
+  sourceMid?: number;
+  targetMid?: number;
+  note?: string;
+}
+
+export function formatConversion(view: ConversionView): string {
+  return encode(stripUndefined(view));
 }
 
 export interface RateView {

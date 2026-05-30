@@ -1,8 +1,14 @@
 // ABOUTME: Tests for the rate tools (list_currencies, get_exchange_rate, get_rate_history,
 // ABOUTME: compare_currencies) exercised end-to-end through the MCP InMemoryTransport pair.
 
-import { NbpApiClient } from "@/nbp-api.js";
-import { registerRateTools } from "@/tools/rates.js";
+import { NbpApiClient } from "#/nbp-api.js";
+import { registerRateTools } from "#/tools/rates.js";
+import { installFetch, jsonResponse } from "#tests/helpers/fetch.js";
+import {
+  createTestPair,
+  getTextContent,
+  type TestPair,
+} from "#tests/helpers/mcp.js";
 import {
   afterEach,
   beforeEach,
@@ -11,12 +17,6 @@ import {
   test,
   type Mock,
 } from "bun:test";
-import { installFetch, jsonResponse } from "../helpers/fetch.js";
-import {
-  createTestPair,
-  getTextContent,
-  type TestPair,
-} from "../helpers/mcp.js";
 
 const ORIGINAL_FETCH = globalThis.fetch;
 

@@ -9,7 +9,7 @@ Documented in [docs/adr/](docs/adr/README.md). When a significant architectural 
 
 ## Conventions
 
-- Use `@/` path alias for TypeScript imports of app modules
+- Use Node subpath imports for module references: `#/*` for app modules (resolves to `./src/*` under Bun, `./dist/*` at runtime), `#tests/*` for test helpers. Never use relative imports.
 - SDK: `@modelcontextprotocol/sdk` v1 (deep imports: `@modelcontextprotocol/sdk/server/mcp.js`)
 - Schema validation: Zod v3, `.describe()` on every field
 - Tool names: snake_case

@@ -6,7 +6,7 @@ import {
   daysInclusive,
   getWarsawToday,
   validateDate,
-} from "@/tools/utils.js";
+} from "#/tools/utils.js";
 import { describe, expect, test } from "bun:test";
 
 describe("chunkDateRange", () => {

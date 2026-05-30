@@ -11,6 +11,13 @@
   "files": [
     "dist"
   ],
+  "imports": {
+    "#/*": {
+      "bun": "./src/*",
+      "default": "./dist/*"
+    },
+    "#tests/*": "./tests/*"
+  },
   "engines": {
     "node": ">=22"
   },

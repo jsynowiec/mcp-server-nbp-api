@@ -7,8 +7,8 @@ import type {
   GoldPrice,
   RateEntry,
   TableType,
-} from "@/types.js";
-import { NbpApiError } from "@/types.js";
+} from "#/types.js";
+import { NbpApiError } from "#/types.js";
 import { LRUCache } from "lru-cache";
 
 const BASE_URL = "https://api.nbp.pl/api";

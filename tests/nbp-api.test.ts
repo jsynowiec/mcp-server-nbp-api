@@ -1,10 +1,10 @@
 // ABOUTME: Tests for the NBP HTTP client — URL construction, response normalization,
 // ABOUTME: caching, skipCache bypass, and NbpApiError mapping for non-2xx and network failures.
 
-import { NbpApiClient } from "@/nbp-api.js";
-import { NbpApiError } from "@/types.js";
+import { NbpApiClient } from "#/nbp-api.js";
+import { NbpApiError } from "#/types.js";
+import { installFetch, jsonResponse } from "#tests/helpers/fetch.js";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { installFetch, jsonResponse } from "./helpers/fetch.js";
 
 const ORIGINAL_FETCH = globalThis.fetch;
 
