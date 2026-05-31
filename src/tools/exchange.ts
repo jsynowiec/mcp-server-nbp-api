@@ -18,7 +18,7 @@ import {
 } from "#/tools/schemas.js";
 import { checkDates, round } from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
-import { NbpApiError } from "#/types.js";
+import { isCurrencyForTable, NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
@@ -137,15 +137,21 @@ export function registerExchangeTools(
       const dateError = checkDates([date, "date"]);
       if (dateError) return dateError;
 
+      if (!isCurrencyForTable("C", upperCode)) {
+        return err(
+          `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
+        );
+      }
+
       try {
         const rate = await client.getExchangeRate("C", upperCode, date, {
           skipCache: skipCache ?? false,
         });
         const quote = rate.rates[0];
-        // NOTE: This is now possibly redundant because of the currency guard and could be missleading
         if (!quote || quote.bid === undefined || quote.ask === undefined) {
-          return err(
-            `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
+          throw new NbpApiError(
+            502,
+            `empty bid/ask payload for ${upperCode} on ${date ?? "the latest date"}`,
           );
         }
         const bid = quote.bid;
@@ -170,12 +176,6 @@ export function registerExchangeTools(
         );
       } catch (e) {
         if (e instanceof NbpApiError) {
-          // NOTE: This is now possibly redundant because of the currency guard and could be missleading
-          if (e.statusCode === 404 && !date) {
-            return err(
-              `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
-            );
-          }
           return err(
             formatNbpApiError(e, {
               resource: "rate",
@@ -241,6 +241,17 @@ export function registerExchangeTools(
             result: amount,
             effectiveDate: null,
           }),
+        );
+      }
+
+      if (from !== "PLN" && !isCurrencyForTable(effectiveTable, from)) {
+        return err(
+          `Currency '${from}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
+        );
+      }
+      if (to !== "PLN" && !isCurrencyForTable(effectiveTable, to)) {
+        return err(
+          `Currency '${to}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
         );
       }
 
@@ -375,6 +386,12 @@ export function registerExchangeTools(
       const upperCode = currency.toUpperCase();
       const effectiveTable: TableType = table ?? "A";
       const opts = { skipCache: skipCache ?? false };
+
+      if (!isCurrencyForTable(effectiveTable, upperCode)) {
+        return err(
+          `Currency '${upperCode}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
+        );
+      }
 
       return runExtremeFinder({
         startDate: start_date,

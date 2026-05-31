@@ -8,22 +8,14 @@ import type {
   GoldPrice,
   RateEntry,
   TableType,
-  TableTypeCurrencyCode,
 } from "#/types.js";
-import { CURRENCY_MAP, NbpApiError } from "#/types.js";
+import { NbpApiError } from "#/types.js";
 import { LRUCache } from "lru-cache";
 
 const BASE_URL = "https://api.nbp.pl/api";
 const CACHE_MAX_ENTRIES = 100;
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const REQUEST_TIMEOUT = 60 * 1000;
-
-const CURRENCY_TABLE_SETS = new Map<TableType, Set<string>>(
-  Object.entries(CURRENCY_MAP).map(([table, codes]) => [
-    table as TableType,
-    new Set(codes),
-  ]),
-);
 
 interface RawExchangeTable {
   table: TableType;
@@ -43,13 +35,6 @@ export interface RequestOptions {
 
 type CachedValue = NonNullable<unknown>;
 
-function isCurrencyForTable<T extends TableType>(
-  table: T,
-  code: string,
-): code is TableTypeCurrencyCode[T] {
-  return CURRENCY_TABLE_SETS.get(table)?.has(code) ?? false;
-}
-
 export class NbpApiClient {
   private readonly cache: LRUCache<string, CachedValue>;
 
@@ -64,17 +49,6 @@ export class NbpApiClient {
     if (!/^[A-Z]{3}$/.test(code)) {
       throw new Error(
         `invalid currency code '${code}': must be exactly 3 ASCII letters`,
-      );
-    }
-  }
-
-  private static assertValidTableCode<T extends TableType>(
-    table: T,
-    code: string,
-  ): void {
-    if (!isCurrencyForTable(table, code)) {
-      throw new Error(
-        `Currency '${code}' not found in Table ${table}. Use list_currencies to see available codes.`,
       );
     }
   }
@@ -124,7 +98,6 @@ export class NbpApiClient {
   ): Promise<ExchangeRate> {
     const upperCode = code.toUpperCase();
     NbpApiClient.assertValidCode(upperCode);
-    NbpApiClient.assertValidTableCode(table, upperCode);
     if (date !== undefined) NbpApiClient.assertValidDate(date, "date");
     const path = date
       ? `/exchangerates/rates/${table}/${upperCode}/${date}/`
@@ -141,7 +114,6 @@ export class NbpApiClient {
   ): Promise<ExchangeRate> {
     const upperCode = code.toUpperCase();
     NbpApiClient.assertValidCode(upperCode);
-    NbpApiClient.assertValidTableCode(table, upperCode);
     NbpApiClient.assertValidDate(startDate, "startDate");
     NbpApiClient.assertValidDate(endDate, "endDate");
     const path = `/exchangerates/rates/${table}/${upperCode}/${startDate}/${endDate}/`;

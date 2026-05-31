@@ -171,20 +171,21 @@ describe("get_bid_ask_rates", () => {
     expect(text).toMatch(/totalSellPln:\s*405/);
   });
 
-  test("404 without a date returns isError pointing to get_exchange_rate", async () => {
-    installFetch(() => new Response("404", { status: 404 }));
+  test("currency outside Table C returns isError pointing to get_exchange_rate without calling NBP", async () => {
+    const { calls } = installFetch(() => jsonResponse(RATE_C_USD_PAYLOAD));
     activePair = await setupPair();
 
     const result = await activePair.client.callTool({
       name: "get_bid_ask_rates",
-      arguments: { currency: "AUD" },
+      arguments: { currency: "KRW" },
     });
 
     expect(result.isError).toBe(true);
     const text = getTextContent(result);
-    expect(text).toMatch(/AUD/);
+    expect(text).toMatch(/KRW/);
     expect(text).toMatch(/Table C/);
     expect(text).toMatch(/get_exchange_rate/);
+    expect(calls).toHaveLength(0);
   });
 
   test("404 with a date returns the business-day hint", async () => {

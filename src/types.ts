@@ -172,9 +172,10 @@ export const CURRENCY_MAP = {
   ],
 } as const satisfies Record<TableType, readonly string[]>;
 
-export type TableTypeCurrencyCode = {
-  [K in TableType]: (typeof CURRENCY_MAP)[K][number];
-};
+export function isCurrencyForTable(table: TableType, code: string): boolean {
+  const codes = CURRENCY_MAP[table] as readonly string[];
+  return codes.includes(code);
+}
 
 export interface RateEntry {
   currency: string;
