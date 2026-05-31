@@ -289,6 +289,58 @@ describe("caching", () => {
   });
 });
 
+describe("path-segment validation", () => {
+  test("getExchangeRate rejects a code with non-letter characters before fetching", async () => {
+    const { calls } = installFetch(() => jsonResponse(RATE_A_PAYLOAD));
+    const client = new NbpApiClient();
+
+    await expect(client.getExchangeRate("A", "../../etc")).rejects.toThrow(
+      /invalid.*code/i,
+    );
+    expect(calls).toHaveLength(0);
+  });
+
+  test("getExchangeRate rejects a date that is not YYYY-MM-DD before fetching", async () => {
+    const { calls } = installFetch(() => jsonResponse(RATE_A_PAYLOAD));
+    const client = new NbpApiClient();
+
+    await expect(
+      client.getExchangeRate("A", "USD", "../../2024-06-27"),
+    ).rejects.toThrow(/invalid.*date/i);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("getExchangeRateHistory rejects a code with path-traversal characters", async () => {
+    const { calls } = installFetch(() => jsonResponse(RATE_A_HISTORY_PAYLOAD));
+    const client = new NbpApiClient();
+
+    await expect(
+      client.getExchangeRateHistory("A", "US/D", "2024-01-01", "2024-06-30"),
+    ).rejects.toThrow(/invalid.*code/i);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("getGoldPrice rejects a date containing path-traversal characters", async () => {
+    const { calls } = installFetch(() => jsonResponse(GOLD_LATEST_PAYLOAD));
+    const client = new NbpApiClient();
+
+    await expect(client.getGoldPrice("../2024-06-27")).rejects.toThrow(
+      /invalid.*date/i,
+    );
+    expect(calls).toHaveLength(0);
+  });
+
+  test("getGoldPriceHistory rejects an end date that is not YYYY-MM-DD", async () => {
+    const { calls } = installFetch(() => jsonResponse(GOLD_HISTORY_PAYLOAD));
+    const client = new NbpApiClient();
+
+    await expect(
+      client.getGoldPriceHistory("2024-01-01", "not-a-date"),
+    ).rejects.toThrow(/invalid.*date/i);
+    expect(calls).toHaveLength(0);
+  });
+});
+
 describe("error mapping", () => {
   test("a 404 response throws NbpApiError with statusCode 404", async () => {
     installFetch(() => new Response("404 NotFound", { status: 404 }));

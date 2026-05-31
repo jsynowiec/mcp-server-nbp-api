@@ -44,11 +44,26 @@ export class NbpApiClient {
     });
   }
 
+  private static assertValidCode(code: string): void {
+    if (!/^[A-Z]{3}$/.test(code)) {
+      throw new Error(
+        `invalid currency code '${code}': must be exactly 3 ASCII letters`,
+      );
+    }
+  }
+
+  private static assertValidDate(date: string, label: string): void {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new Error(`invalid ${label} '${date}': must be YYYY-MM-DD`);
+    }
+  }
+
   async getExchangeTable(
     table: TableType,
     date?: string,
     options?: RequestOptions,
   ): Promise<ExchangeTable> {
+    if (date !== undefined) NbpApiClient.assertValidDate(date, "date");
     const path = date
       ? `/exchangerates/tables/${table}/${date}/`
       : `/exchangerates/tables/${table}/`;
@@ -81,6 +96,8 @@ export class NbpApiClient {
     options?: RequestOptions,
   ): Promise<ExchangeRate> {
     const upperCode = code.toUpperCase();
+    NbpApiClient.assertValidCode(upperCode);
+    if (date !== undefined) NbpApiClient.assertValidDate(date, "date");
     const path = date
       ? `/exchangerates/rates/${table}/${upperCode}/${date}/`
       : `/exchangerates/rates/${table}/${upperCode}/`;
@@ -95,6 +112,9 @@ export class NbpApiClient {
     options?: RequestOptions,
   ): Promise<ExchangeRate> {
     const upperCode = code.toUpperCase();
+    NbpApiClient.assertValidCode(upperCode);
+    NbpApiClient.assertValidDate(startDate, "startDate");
+    NbpApiClient.assertValidDate(endDate, "endDate");
     const path = `/exchangerates/rates/${table}/${upperCode}/${startDate}/${endDate}/`;
     return this.request<ExchangeRate>(path, options);
   }
@@ -103,6 +123,7 @@ export class NbpApiClient {
     date?: string,
     options?: RequestOptions,
   ): Promise<GoldPrice> {
+    if (date !== undefined) NbpApiClient.assertValidDate(date, "date");
     const path = date ? `/cenyzlota/${date}/` : `/cenyzlota/`;
     const payload = await this.request<RawGoldPrice[]>(path, options);
     const entry = payload[0];
@@ -120,6 +141,8 @@ export class NbpApiClient {
     endDate: string,
     options?: RequestOptions,
   ): Promise<GoldPrice[]> {
+    NbpApiClient.assertValidDate(startDate, "startDate");
+    NbpApiClient.assertValidDate(endDate, "endDate");
     const path = `/cenyzlota/${startDate}/${endDate}/`;
     const payload = await this.request<RawGoldPrice[]>(path, options);
     return payload.map((entry) => ({ date: entry.data, price: entry.cena }));
