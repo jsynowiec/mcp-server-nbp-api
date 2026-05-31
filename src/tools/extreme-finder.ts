@@ -5,7 +5,7 @@ import { formatNbpApiError, type NbpErrorContext } from "#/tools/errors.js";
 import { formatExtremeResponse } from "#/tools/format.js";
 import { err, ok, type ToolResult } from "#/tools/result.js";
 import { computeExtremeStats, type SeriesPoint } from "#/tools/stats.js";
-import { chunkDateRange, daysInclusive, validateDate } from "#/tools/utils.js";
+import { checkDates, chunkDateRange, daysInclusive } from "#/tools/utils.js";
 import { NbpApiError } from "#/types.js";
 
 export const FIND_EXTREME_MAX_DAYS = 366;
@@ -26,12 +26,11 @@ export async function runExtremeFinder(
   const { startDate, endDate, mode, fetchChunk, errorContext, emptyMessage } =
     config;
 
-  try {
-    validateDate(startDate, "start_date");
-    validateDate(endDate, "end_date");
-  } catch (e) {
-    return err((e as Error).message);
-  }
+  const dateError = checkDates(
+    [startDate, "start_date"],
+    [endDate, "end_date"],
+  );
+  if (dateError) return dateError;
 
   if (startDate > endDate) {
     return err(

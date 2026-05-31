@@ -15,7 +15,7 @@ import {
 import { err, ok } from "#/tools/result.js";
 import { extremeEnum, skipCacheSchema } from "#/tools/schemas.js";
 import { computeHistoryStats } from "#/tools/stats.js";
-import { daysInclusive, round, validateDate } from "#/tools/utils.js";
+import { checkDates, daysInclusive, round } from "#/tools/utils.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -49,13 +49,8 @@ export function registerGoldTools(
       annotations: { readOnlyHint: true },
     },
     async ({ amount_grams, date, skipCache }) => {
-      if (date !== undefined) {
-        try {
-          validateDate(date, "date");
-        } catch (e) {
-          return err((e as Error).message);
-        }
-      }
+      const dateError = checkDates([date, "date"]);
+      if (dateError) return dateError;
 
       try {
         const price = await client.getGoldPrice(date, {
@@ -101,12 +96,11 @@ export function registerGoldTools(
       annotations: { readOnlyHint: true },
     },
     async ({ start_date, end_date, skipCache }) => {
-      try {
-        validateDate(start_date, "start_date");
-        validateDate(end_date, "end_date");
-      } catch (e) {
-        return err((e as Error).message);
-      }
+      const dateError = checkDates(
+        [start_date, "start_date"],
+        [end_date, "end_date"],
+      );
+      if (dateError) return dateError;
 
       if (start_date > end_date) {
         return err(

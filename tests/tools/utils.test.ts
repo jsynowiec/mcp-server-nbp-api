@@ -2,6 +2,7 @@
 // ABOUTME: Covers range chunking, Warsaw-local "today", and date validation.
 
 import {
+  checkDates,
   chunkDateRange,
   daysInclusive,
   getWarsawToday,
@@ -126,5 +127,60 @@ describe("validateDate", () => {
     expect(() => {
       validateDate("not-a-date", "start_date");
     }).toThrow(/start_date/);
+  });
+});
+
+describe("checkDates", () => {
+  test("returns undefined when called with no entries", () => {
+    expect(checkDates()).toBeUndefined();
+  });
+
+  test("returns undefined when every supplied date is undefined", () => {
+    expect(
+      checkDates([undefined, "date"], [undefined, "other"]),
+    ).toBeUndefined();
+  });
+
+  test("returns undefined when every supplied date is valid", () => {
+    expect(
+      checkDates(["2024-01-15", "start_date"], ["2024-06-15", "end_date"]),
+    ).toBeUndefined();
+  });
+
+  test("returns a tool error result for a malformed date", () => {
+    const result = checkDates(["27-06-2024", "date"]);
+    expect(result).toBeDefined();
+    expect(result?.isError).toBe(true);
+    const text = result?.content[0]?.text ?? "";
+    expect(text).toMatch(/Invalid date/);
+    expect(text).toMatch(/'date'/);
+  });
+
+  test("returns the error for the first invalid entry and ignores later ones", () => {
+    const result = checkDates(["nope", "start_date"], ["also-bad", "end_date"]);
+    const text = result?.content[0]?.text ?? "";
+    expect(text).toMatch(/start_date/);
+    expect(text).not.toMatch(/end_date/);
+  });
+
+  test("skips undefined entries and still validates the rest", () => {
+    const result = checkDates(
+      [undefined, "start_date"],
+      ["2099-13-99", "end_date"],
+    );
+    expect(result?.isError).toBe(true);
+    expect(result?.content[0]?.text ?? "").toMatch(/end_date/);
+  });
+
+  test("flags a future date with the future-date message", () => {
+    const tomorrowWarsaw = (() => {
+      const today = getWarsawToday();
+      const d = new Date(today + "T00:00:00Z");
+      d.setUTCDate(d.getUTCDate() + 1);
+      return d.toISOString().slice(0, 10);
+    })();
+    const result = checkDates([tomorrowWarsaw, "date"]);
+    expect(result?.isError).toBe(true);
+    expect(result?.content[0]?.text ?? "").toMatch(/future/);
   });
 });

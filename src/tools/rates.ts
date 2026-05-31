@@ -17,7 +17,7 @@ import {
   tableEnum,
 } from "#/tools/schemas.js";
 import { computeHistoryStats } from "#/tools/stats.js";
-import { daysInclusive, round, validateDate } from "#/tools/utils.js";
+import { checkDates, daysInclusive, round } from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -100,13 +100,8 @@ export function registerRateTools(
       const effectiveTable: TableType = table ?? "A";
       const upperCode = currency.toUpperCase();
 
-      if (date !== undefined) {
-        try {
-          validateDate(date, "date");
-        } catch (e) {
-          return err((e as Error).message);
-        }
-      }
+      const dateError = checkDates([date, "date"]);
+      if (dateError) return dateError;
 
       try {
         const rate = await client.getExchangeRate(
@@ -179,12 +174,11 @@ export function registerRateTools(
       const effectiveTable: TableType = table ?? "A";
       const upperCode = currency.toUpperCase();
 
-      try {
-        validateDate(start_date, "start_date");
-        validateDate(end_date, "end_date");
-      } catch (e) {
-        return err((e as Error).message);
-      }
+      const dateError = checkDates(
+        [start_date, "start_date"],
+        [end_date, "end_date"],
+      );
+      if (dateError) return dateError;
 
       if (start_date > end_date) {
         return err(
@@ -270,13 +264,8 @@ export function registerRateTools(
       const effectiveTable: TableType = table ?? "A";
       const requested = currencies.map((c) => c.toUpperCase());
 
-      if (date !== undefined) {
-        try {
-          validateDate(date, "date");
-        } catch (e) {
-          return err((e as Error).message);
-        }
-      }
+      const dateError = checkDates([date, "date"]);
+      if (dateError) return dateError;
 
       try {
         const snapshot = await client.getExchangeTable(effectiveTable, date, {

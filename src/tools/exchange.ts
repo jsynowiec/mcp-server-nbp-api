@@ -16,7 +16,7 @@ import {
   skipCacheSchema,
   tableEnum,
 } from "#/tools/schemas.js";
-import { round, validateDate } from "#/tools/utils.js";
+import { checkDates, round } from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -51,13 +51,8 @@ export function registerExchangeTools(
     async ({ table, date, skipCache }) => {
       const effectiveTable: TableType = table ?? "A";
 
-      if (date !== undefined) {
-        try {
-          validateDate(date, "date");
-        } catch (e) {
-          return err((e as Error).message);
-        }
-      }
+      const dateError = checkDates([date, "date"]);
+      if (dateError) return dateError;
 
       try {
         const snapshot = await client.getExchangeTable(effectiveTable, date, {
@@ -139,13 +134,8 @@ export function registerExchangeTools(
     async ({ currency, amount, date, skipCache }) => {
       const upperCode = currency.toUpperCase();
 
-      if (date !== undefined) {
-        try {
-          validateDate(date, "date");
-        } catch (e) {
-          return err((e as Error).message);
-        }
-      }
+      const dateError = checkDates([date, "date"]);
+      if (dateError) return dateError;
 
       try {
         const rate = await client.getExchangeRate("C", upperCode, date, {
@@ -236,13 +226,8 @@ export function registerExchangeTools(
       const to = to_currency.toUpperCase();
       const effectiveTable: TableType = table ?? "A";
 
-      if (date !== undefined) {
-        try {
-          validateDate(date, "date");
-        } catch (e) {
-          return err((e as Error).message);
-        }
-      }
+      const dateError = checkDates([date, "date"]);
+      if (dateError) return dateError;
 
       if (from === to) {
         return ok(

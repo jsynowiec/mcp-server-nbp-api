@@ -1,6 +1,8 @@
 // ABOUTME: Date utilities shared by tool handlers.
 // ABOUTME: Range chunking for the NBP 93-day API limit, Warsaw-local "today", and date validation.
 
+import { err, type ToolResult } from "#/tools/result.js";
+
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -52,6 +54,20 @@ export function daysInclusive(start: string, end: string): number {
 export function round(value: number, decimals: number): number {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
+}
+
+export function checkDates(
+  ...entries: Array<[string | undefined, string]>
+): ToolResult | undefined {
+  for (const [date, field] of entries) {
+    if (date === undefined) continue;
+    try {
+      validateDate(date, field);
+    } catch (e) {
+      return err((e as Error).message);
+    }
+  }
+  return undefined;
 }
 
 export function validateDate(date: string, fieldName: string): void {
