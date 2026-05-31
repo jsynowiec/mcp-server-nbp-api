@@ -29,7 +29,8 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "dev:test": "bun test --watch",
-    "prepublishOnly": "bun run build && bun run lint && bun run typecheck && bun run test"
+    "prebuild": "bun run lint && bun run typecheck && bun run fmtcheck && bun run test",
+    "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

@@ -6,16 +6,18 @@ import { registerPrompts } from "#/prompts.js";
 import { registerResources } from "#/resources.js";
 import { registerTools } from "#/tools/index.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { readFileSync } from "node:fs";
+import pkg from "../package.json" with { type: "json" };
 
 export interface ServerInfo {
   name: string;
   version: string;
 }
 
-export const SERVER_INFO: ServerInfo = JSON.parse(
-  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-) as ServerInfo;
+const { name, version } = pkg;
+export const SERVER_INFO: ServerInfo = {
+  name,
+  version,
+};
 
 export function createServer(): McpServer {
   const client = new NbpApiClient();
