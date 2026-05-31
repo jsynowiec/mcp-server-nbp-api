@@ -231,6 +231,17 @@ export function registerExchangeTools(
       const dateError = checkDates([date, "date"]);
       if (dateError) return dateError;
 
+      if (from !== "PLN" && !isCurrencyForTable(effectiveTable, from)) {
+        return err(
+          `Currency '${from}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
+        );
+      }
+      if (to !== "PLN" && !isCurrencyForTable(effectiveTable, to)) {
+        return err(
+          `Currency '${to}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
+        );
+      }
+
       if (from === to) {
         return ok(
           formatConversion({
@@ -241,17 +252,6 @@ export function registerExchangeTools(
             result: amount,
             effectiveDate: null,
           }),
-        );
-      }
-
-      if (from !== "PLN" && !isCurrencyForTable(effectiveTable, from)) {
-        return err(
-          `Currency '${from}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
-        );
-      }
-      if (to !== "PLN" && !isCurrencyForTable(effectiveTable, to)) {
-        return err(
-          `Currency '${to}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
         );
       }
 
