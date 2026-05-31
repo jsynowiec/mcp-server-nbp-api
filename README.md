@@ -3,7 +3,25 @@
 [![Sponsor][sponsor-badge]][sponsor]
 [![License][license-badge]][license]
 
-An MCP server that integrates the [NBP Web API](https://api.nbp.pl/en.html), enabling natural language interaction with the datasets published by the NBP.PL. Query the current and historic exchange rates of foreign currencies, and current and historic prices of gold calculated at NBP.
+An MCP server that integrates the [Narodowy Bank Polski (NBP) Web API](https://api.nbp.pl/en.html), enabling natural language interaction with the datasets published by the NBP. Query current and historic exchange rates (mid rates and bid/ask spreads), gold prices, convert between currencies, compare currencies side-by-side, and analyse rate trends over time.
+
+## Example
+
+> ### 🧑‍💻 User
+>
+> Compare the latest gold price to its recent average over 30 days.
+>
+> ### 🤖 Assistant
+>
+> Here's the comparison between the latest NBP gold price and its 30‑day average:
+>
+> | Metric                                    | Value                    |
+> | ----------------------------------------- | ------------------------ |
+> | **Latest price** (29 May 2026)            | **514.16 PLN/g**         |
+> | **30‑day average** (29 Apr – 29 May 2026) | **536.18 PLN/g**         |
+> | Difference vs. average                    | **–22.02 PLN/g (–4.1%)** |
+>
+> The current gold price is **4.1% below** the 30‑day average. It's actually the lowest close in the entire period — the 30‑day range ran from 514.16 (today) up to a peak of 549.04 on 14 May. So gold has softened noticeably over the past couple of weeks after touching that high in mid‑May.
 
 ## Installing
 
