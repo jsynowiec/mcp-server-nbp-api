@@ -290,51 +290,51 @@ describe("caching", () => {
 });
 
 describe("path-segment validation", () => {
-  test("getExchangeRate rejects a code with non-letter characters before fetching", async () => {
+  test("getExchangeRate rejects a code with non-letter characters before fetching", () => {
     const { calls } = installFetch(() => jsonResponse(RATE_A_PAYLOAD));
     const client = new NbpApiClient();
 
-    await expect(client.getExchangeRate("A", "../../etc")).rejects.toThrow(
+    expect(client.getExchangeRate("A", "../../etc")).rejects.toThrow(
       /invalid.*code/i,
     );
     expect(calls).toHaveLength(0);
   });
 
-  test("getExchangeRate rejects a date that is not YYYY-MM-DD before fetching", async () => {
+  test("getExchangeRate rejects a date that is not YYYY-MM-DD before fetching", () => {
     const { calls } = installFetch(() => jsonResponse(RATE_A_PAYLOAD));
     const client = new NbpApiClient();
 
-    await expect(
+    expect(
       client.getExchangeRate("A", "USD", "../../2024-06-27"),
     ).rejects.toThrow(/invalid.*date/i);
     expect(calls).toHaveLength(0);
   });
 
-  test("getExchangeRateHistory rejects a code with path-traversal characters", async () => {
+  test("getExchangeRateHistory rejects a code with path-traversal characters", () => {
     const { calls } = installFetch(() => jsonResponse(RATE_A_HISTORY_PAYLOAD));
     const client = new NbpApiClient();
 
-    await expect(
+    expect(
       client.getExchangeRateHistory("A", "US/D", "2024-01-01", "2024-06-30"),
     ).rejects.toThrow(/invalid.*code/i);
     expect(calls).toHaveLength(0);
   });
 
-  test("getGoldPrice rejects a date containing path-traversal characters", async () => {
+  test("getGoldPrice rejects a date containing path-traversal characters", () => {
     const { calls } = installFetch(() => jsonResponse(GOLD_LATEST_PAYLOAD));
     const client = new NbpApiClient();
 
-    await expect(client.getGoldPrice("../2024-06-27")).rejects.toThrow(
+    expect(client.getGoldPrice("../2024-06-27")).rejects.toThrow(
       /invalid.*date/i,
     );
     expect(calls).toHaveLength(0);
   });
 
-  test("getGoldPriceHistory rejects an end date that is not YYYY-MM-DD", async () => {
+  test("getGoldPriceHistory rejects an end date that is not YYYY-MM-DD", () => {
     const { calls } = installFetch(() => jsonResponse(GOLD_HISTORY_PAYLOAD));
     const client = new NbpApiClient();
 
-    await expect(
+    expect(
       client.getGoldPriceHistory("2024-01-01", "not-a-date"),
     ).rejects.toThrow(/invalid.*date/i);
     expect(calls).toHaveLength(0);
@@ -429,12 +429,42 @@ describe("error mapping", () => {
     });
     const client = new NbpApiClient();
 
-    await expect(client.getExchangeTable("A")).rejects.toBeInstanceOf(
-      NbpApiError,
-    );
+    expect(client.getExchangeTable("A")).rejects.toBeInstanceOf(NbpApiError);
     const result = await client.getExchangeTable("A");
 
     expect(calls).toHaveLength(2);
     expect(result.table).toBe("A");
+  });
+});
+
+describe("Fetch timeout", () => {
+  test("passes an AbortSignal.timeout signal to fetch", async () => {
+    const { calls } = installFetch(() => jsonResponse(TABLE_A_PAYLOAD));
+    const client = new NbpApiClient();
+
+    await client.getExchangeTable("A");
+
+    const init = calls[0]!.init as RequestInit;
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+    expect(init.signal?.aborted).toBe(false);
+  });
+
+  test("an AbortSignal timeout (DOMException) is mapped to NbpApiError statusCode 0", async () => {
+    installFetch(() => {
+      throw new DOMException("The operation was aborted.", "TimeoutError");
+    });
+    const client = new NbpApiClient();
+
+    let caught: unknown;
+    try {
+      await client.getExchangeTable("A");
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeInstanceOf(NbpApiError);
+    const error = caught as NbpApiError;
+    expect(error.statusCode).toBe(0);
+    expect(error.message).toMatch(/The operation was aborted/i);
   });
 });

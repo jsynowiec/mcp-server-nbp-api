@@ -16,6 +16,7 @@ import { LRUCache } from "lru-cache";
 const BASE_URL = "https://api.nbp.pl/api";
 const CACHE_MAX_ENTRIES = 100;
 const CACHE_TTL_MS = 15 * 60 * 1000;
+const REQUEST_TIMEOUT = 60 * 1000;
 
 const CURRENCY_TABLE_SETS = new Map<TableType, Set<string>>(
   Object.entries(CURRENCY_MAP).map(([table, codes]) => [
@@ -190,6 +191,7 @@ export class NbpApiClient {
     try {
       response = await fetch(`${BASE_URL}${path}`, {
         headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
