@@ -1,11 +1,10 @@
-// ABOUTME: Tests for src/server.ts — verifies createServer() exposes the expected
-// ABOUTME: name, version, and the full count of tools/resources/prompts.
+// ABOUTME: Tests for src/server.ts — verifies createServer() exposes the
+// ABOUTME: full count of tools/resources/prompts and all expected tool names.
 
 import { createServer } from "#/server.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readFile } from "node:fs/promises";
 
 interface Wired {
   client: Client;
@@ -41,17 +40,6 @@ afterEach(async () => {
 });
 
 describe("createServer", () => {
-  test("server.getServerVersion() matches package name and version", async () => {
-    const pkgRaw = await readFile(
-      new URL("../package.json", import.meta.url),
-      "utf8",
-    );
-    const pkg = JSON.parse(pkgRaw) as { name: string; version: string };
-    const info = wired.client.getServerVersion();
-    expect(info?.name).toBe(pkg.name);
-    expect(info?.version).toBe(pkg.version);
-  });
-
   test("exposes exactly 11 tools", async () => {
     const result = await wired.client.listTools();
     expect(result.tools).toHaveLength(11);

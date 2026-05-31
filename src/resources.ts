@@ -7,6 +7,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 const TABLES_METADATA = `NBP exchange-rate tables
 
+Currency codes throughout the NBP API follow ISO 4217 (three uppercase letters, e.g. USD, EUR, GBP).
+
 Table A — mid rates for major currencies (~35 currencies). Updated each business day.
   Use when you need a single reference rate (mid) for a common currency such as USD, EUR, GBP.
 
@@ -19,6 +21,10 @@ Table C — bid and ask rates for major currencies (~28 currencies). Updated eac
 `;
 
 const SCHEDULE_METADATA = `NBP API publication schedule and data limits
+
+Date format
+  All dates accepted and returned by the NBP API are ISO 8601 calendar dates in YYYY-MM-DD form
+  (e.g. 2026-05-30), interpreted in the Europe/Warsaw timezone.
 
 Publication days
   NBP publishes rates and gold prices on Polish business days only (Mon–Fri, excluding Polish public holidays).
@@ -69,9 +75,10 @@ export function registerResources(
     );
   }
 
+  const metaTablesUri = "nbp://meta/tables";
   server.registerResource(
     "meta-tables",
-    "nbp://meta/tables",
+    metaTablesUri,
     {
       description:
         "Overview of NBP exchange-rate tables (A, B, C): what each contains, update cadence, and when to use each.",
@@ -80,7 +87,7 @@ export function registerResources(
     () => ({
       contents: [
         {
-          uri: "nbp://meta/tables",
+          uri: metaTablesUri,
           mimeType: "text/plain",
           text: TABLES_METADATA,
         },
@@ -88,9 +95,10 @@ export function registerResources(
     }),
   );
 
+  const metaScheduleUri = "nbp://meta/schedule";
   server.registerResource(
     "meta-schedule",
-    "nbp://meta/schedule",
+    metaScheduleUri,
     {
       description:
         "NBP API publication schedule, business-day caveats, data availability start dates, and 93-day range limit.",
@@ -99,7 +107,7 @@ export function registerResources(
     () => ({
       contents: [
         {
-          uri: "nbp://meta/schedule",
+          uri: metaScheduleUri,
           mimeType: "text/plain",
           text: SCHEDULE_METADATA,
         },
