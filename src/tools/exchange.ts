@@ -296,13 +296,14 @@ export function registerExchangeTools(
           if (!quote || quote.mid === undefined) {
             return err(`No NBP mid rate available for ${from}.`);
           }
+          const roundedRate = round(quote.mid, 6);
           return ok(
             formatConversion({
               amount,
               from,
               to: "PLN",
-              rate: quote.mid,
-              result: round(amount * quote.mid, 4),
+              rate: roundedRate,
+              result: round(amount * roundedRate, 4),
               effectiveDate: quote.effectiveDate,
               note,
             }),
