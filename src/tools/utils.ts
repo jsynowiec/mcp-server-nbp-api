@@ -52,8 +52,9 @@ export function daysInclusive(start: string, end: string): number {
 }
 
 export function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
+  // Exponential-notation shift avoids the IEEE 754 trap where factor-multiply
+  // (e.g. 1.255 * 100 = 125.4999...) causes naive Math.round to round the wrong way.
+  return Number(Math.round(Number(`${value}e${decimals}`)) + `e-${decimals}`);
 }
 
 export function checkDates(

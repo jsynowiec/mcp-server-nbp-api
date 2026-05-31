@@ -6,9 +6,32 @@ import {
   chunkDateRange,
   daysInclusive,
   getWarsawToday,
+  round,
   validateDate,
 } from "#/tools/utils.js";
 import { describe, expect, test } from "bun:test";
+
+describe("round", () => {
+  test("rounds down when fractional digit is less than 5", () => {
+    expect(round(3.142, 2)).toBe(3.14);
+  });
+
+  test("rounds up when fractional digit is greater than 5", () => {
+    expect(round(3.147, 2)).toBe(3.15);
+  });
+
+  test("rounds .5 up (not banker's rounding)", () => {
+    expect(round(3.145, 2)).toBe(3.15);
+  });
+
+  test("rounds .5 up even when IEEE 754 stores the value slightly below the midpoint", () => {
+    // 1.255 is stored as 1.25499999... in IEEE 754 double precision.
+    // Naive factor-multiply (1.255 * 100 = 125.49999...) rounds to 1.25 (wrong).
+    expect(round(1.255, 2)).toBe(1.26);
+    // 1.005 * 100 = 100.49999... — same trap.
+    expect(round(1.005, 2)).toBe(1.01);
+  });
+});
 
 describe("chunkDateRange", () => {
   test("returns one chunk when the range fits within maxDays", () => {

@@ -55,6 +55,20 @@ const RATE_EUR_PAYLOAD = {
   rates: [{ no: "123/A/NBP/2024", effectiveDate: "2024-06-27", mid: 4.32 }],
 };
 
+const RATE_GBP_PAYLOAD = {
+  table: "A",
+  currency: "funt szterling",
+  code: "GBP",
+  rates: [{ no: "1/A/NBP/2024", effectiveDate: "2024-06-27", mid: 1.0 }],
+};
+
+const RATE_JPY_PAYLOAD = {
+  table: "A",
+  currency: "jen japoński",
+  code: "JPY",
+  rates: [{ no: "1/A/NBP/2024", effectiveDate: "2024-06-27", mid: 7.0 }],
+};
+
 const RATE_C_USD_PAYLOAD = {
   table: "C",
   currency: "dolar amerykański",
@@ -270,6 +284,28 @@ describe("convert_currency", () => {
     // 100 USD = 100 * 4.0 PLN = 400 PLN / 4.32 = 92.59...
     expect(text).toMatch(/result:\s*92\.5/);
     expect(calls).toHaveLength(2);
+  });
+
+  test("cross-currency result is computed from the rounded rate, not the raw quotient", async () => {
+    // GBP mid=1, JPY mid=7 → crossRate=1/7=0.142857142...
+    // round(1/7, 6) = 0.142857
+    // Old (raw): round(700 * (1/7), 4) = round(100.0, 4) = 100.0   (inconsistent with displayed rate)
+    // New (rounded): round(700 * 0.142857, 4) = round(99.9999, 4) = 99.9999 (matches displayed rate)
+    installFetch((url) => {
+      if (url.includes("/GBP/")) return jsonResponse(RATE_GBP_PAYLOAD);
+      return jsonResponse(RATE_JPY_PAYLOAD);
+    });
+    activePair = await setupPair();
+
+    const result = await activePair.client.callTool({
+      name: "convert_currency",
+      arguments: { amount: 700, from_currency: "GBP", to_currency: "JPY" },
+    });
+
+    expect(result.isError).toBeFalsy();
+    const text = getTextContent(result);
+    expect(text).toMatch(/rate:\s*0\.142857/);
+    expect(text).toMatch(/result:\s*99\.9999/);
   });
 
   test("propagates table=B to both legs of a cross-currency conversion", async () => {

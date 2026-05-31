@@ -312,14 +312,14 @@ export function registerExchangeTools(
         }
         const sourceMid = sourceQuote.mid;
         const targetMid = targetQuote.mid;
-        const crossRate = sourceMid / targetMid;
+        const roundedRate = round(sourceMid / targetMid, 6);
         return ok(
           formatConversion({
             amount,
             from,
             to,
-            rate: round(crossRate, 6),
-            result: round(amount * crossRate, 4),
+            rate: roundedRate,
+            result: round(amount * roundedRate, 4),
             effectiveDate: sourceQuote.effectiveDate,
             sourceMid,
             targetMid,
