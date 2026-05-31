@@ -3,6 +3,7 @@
 
 import { NbpApiClient } from "#/nbp-api.js";
 import { registerRateTools } from "#/tools/rates.js";
+import { warsawTomorrow } from "#tests/helpers/dates.js";
 import { installFetch, jsonResponse } from "#tests/helpers/fetch.js";
 import {
   createTestPair,
@@ -183,7 +184,7 @@ describe("get_exchange_rate", () => {
 
     const result = await activePair.client.callTool({
       name: "get_exchange_rate",
-      arguments: { currency: "USD", date: "2099-01-01" },
+      arguments: { currency: "USD", date: warsawTomorrow() },
     });
 
     expect(result.isError).toBe(true);

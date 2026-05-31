@@ -3,6 +3,7 @@
 
 import { NbpApiClient } from "#/nbp-api.js";
 import { registerGoldTools } from "#/tools/gold.js";
+import { warsawTomorrow } from "#tests/helpers/dates.js";
 import { installFetch, jsonResponse } from "#tests/helpers/fetch.js";
 import {
   createTestPair,
@@ -104,7 +105,7 @@ describe("get_gold_price", () => {
 
     const result = await activePair.client.callTool({
       name: "get_gold_price",
-      arguments: { date: "2099-01-01" },
+      arguments: { date: warsawTomorrow() },
     });
 
     expect(result.isError).toBe(true);

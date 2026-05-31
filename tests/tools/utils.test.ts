@@ -9,6 +9,7 @@ import {
   round,
   validateDate,
 } from "#/tools/utils.js";
+import { warsawTomorrow } from "#tests/helpers/dates.js";
 import { describe, expect, test } from "bun:test";
 
 describe("round", () => {
@@ -135,14 +136,8 @@ describe("validateDate", () => {
   });
 
   test("rejects a date in the future relative to Warsaw today", () => {
-    const tomorrowWarsaw = (() => {
-      const today = getWarsawToday();
-      const d = new Date(today + "T00:00:00Z");
-      d.setUTCDate(d.getUTCDate() + 1);
-      return d.toISOString().slice(0, 10);
-    })();
     expect(() => {
-      validateDate(tomorrowWarsaw, "date");
+      validateDate(warsawTomorrow(), "date");
     }).toThrow(/future/);
   });
 
@@ -196,13 +191,7 @@ describe("checkDates", () => {
   });
 
   test("flags a future date with the future-date message", () => {
-    const tomorrowWarsaw = (() => {
-      const today = getWarsawToday();
-      const d = new Date(today + "T00:00:00Z");
-      d.setUTCDate(d.getUTCDate() + 1);
-      return d.toISOString().slice(0, 10);
-    })();
-    const result = checkDates([tomorrowWarsaw, "date"]);
+    const result = checkDates([warsawTomorrow(), "date"]);
     expect(result?.isError).toBe(true);
     expect(result?.content[0]?.text ?? "").toMatch(/future/);
   });
