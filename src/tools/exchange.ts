@@ -4,19 +4,12 @@
 import type { NbpApiClient } from "#/nbp-api.js";
 import { formatNbpApiError } from "#/tools/errors.js";
 import {
-  formatBidAsk,
-  formatConversion,
-  formatExtremeResponse,
-  formatTable,
-} from "#/tools/format.js";
+  FIND_EXTREME_MAX_DAYS,
+  runExtremeFinder,
+} from "#/tools/extreme-finder.js";
+import { formatBidAsk, formatConversion, formatTable } from "#/tools/format.js";
 import { err, ok } from "#/tools/result.js";
-import { computeExtremeStats } from "#/tools/stats.js";
-import {
-  chunkDateRange,
-  daysInclusive,
-  round,
-  validateDate,
-} from "#/tools/utils.js";
+import { round, validateDate } from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -34,9 +27,6 @@ const skipCacheSchema = z
   .describe(
     "Bypass the in-process cache and fetch a fresh value from NBP. Default: false.",
   );
-
-const FIND_EXTREME_MAX_DAYS = 366;
-const HISTORY_CHUNK_DAYS = 93;
 
 export function registerExchangeTools(
   server: McpServer,
@@ -403,34 +393,13 @@ export function registerExchangeTools(
     async ({ currency, start_date, end_date, extreme, table, skipCache }) => {
       const upperCode = currency.toUpperCase();
       const effectiveTable: TableType = table ?? "A";
-      const mode = extreme ?? "both";
-
-      try {
-        validateDate(start_date, "start_date");
-        validateDate(end_date, "end_date");
-      } catch (e) {
-        return err((e as Error).message);
-      }
-
-      if (start_date > end_date) {
-        return err(
-          `start_date '${start_date}' must be on or before end_date '${end_date}'.`,
-        );
-      }
-
-      const span = daysInclusive(start_date, end_date);
-      if (span > FIND_EXTREME_MAX_DAYS) {
-        return err(
-          `Date range of ${span} days exceeds the ${FIND_EXTREME_MAX_DAYS}-day limit for find_rate_extreme.`,
-        );
-      }
-
-      const chunks = chunkDateRange(start_date, end_date, HISTORY_CHUNK_DAYS);
       const opts = { skipCache: skipCache ?? false };
-      const series: { date: string; mid: number }[] = [];
 
-      try {
-        for (const [chunkStart, chunkEnd] of chunks) {
+      return runExtremeFinder({
+        startDate: start_date,
+        endDate: end_date,
+        mode: extreme ?? "both",
+        fetchChunk: async (chunkStart, chunkEnd) => {
           const history = await client.getExchangeRateHistory(
             effectiveTable,
             upperCode,
@@ -438,41 +407,17 @@ export function registerExchangeTools(
             chunkEnd,
             opts,
           );
-          for (const q of history.rates) {
-            if (q.mid !== undefined) {
-              series.push({ date: q.effectiveDate, mid: q.mid });
-            }
-          }
-        }
-      } catch (e) {
-        if (e instanceof NbpApiError) {
-          return err(
-            formatNbpApiError(e, {
-              resource: "rate",
-              table: effectiveTable,
-              code: upperCode,
-              rangeStart: start_date,
-              rangeEnd: end_date,
-            }),
-          );
-        }
-        throw e;
-      }
-
-      if (series.length === 0) {
-        return err(
-          `No NBP data in the range ${start_date} → ${end_date} for ${upperCode}. NBP publishes on business days only.`,
-        );
-      }
-
-      return ok(
-        formatExtremeResponse(
-          computeExtremeStats(
-            series.map((p) => ({ date: p.date, value: p.mid })),
-            mode,
-          ),
-        ),
-      );
+          return history.rates
+            .filter((q): q is typeof q & { mid: number } => q.mid !== undefined)
+            .map((q) => ({ date: q.effectiveDate, value: q.mid }));
+        },
+        errorContext: {
+          resource: "rate",
+          table: effectiveTable,
+          code: upperCode,
+        },
+        emptyMessage: `No NBP data in the range ${start_date} → ${end_date} for ${upperCode}. NBP publishes on business days only.`,
+      });
     },
   );
 }

@@ -4,19 +4,17 @@
 import type { NbpApiClient } from "#/nbp-api.js";
 import { formatNbpApiError } from "#/tools/errors.js";
 import {
-  formatExtremeResponse,
+  FIND_EXTREME_MAX_DAYS,
+  runExtremeFinder,
+} from "#/tools/extreme-finder.js";
+import {
   formatGoldPrice,
   formatHistoryResponse,
   type GoldSeriesPoint,
 } from "#/tools/format.js";
 import { err, ok } from "#/tools/result.js";
-import { computeExtremeStats, computeHistoryStats } from "#/tools/stats.js";
-import {
-  chunkDateRange,
-  daysInclusive,
-  round,
-  validateDate,
-} from "#/tools/utils.js";
+import { computeHistoryStats } from "#/tools/stats.js";
+import { daysInclusive, round, validateDate } from "#/tools/utils.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -28,9 +26,6 @@ const skipCacheSchema = z
   .describe(
     "Bypass the in-process cache and fetch a fresh value from NBP. Default: false.",
   );
-
-const FIND_EXTREME_MAX_DAYS = 366;
-const HISTORY_CHUNK_DAYS = 93;
 
 export function registerGoldTools(
   server: McpServer,
@@ -191,70 +186,23 @@ export function registerGoldTools(
       annotations: { readOnlyHint: true },
     },
     async ({ start_date, end_date, extreme, skipCache }) => {
-      const mode = extreme ?? "both";
-
-      try {
-        validateDate(start_date, "start_date");
-        validateDate(end_date, "end_date");
-      } catch (e) {
-        return err((e as Error).message);
-      }
-
-      if (start_date > end_date) {
-        return err(
-          `start_date '${start_date}' must be on or before end_date '${end_date}'.`,
-        );
-      }
-
-      const span = daysInclusive(start_date, end_date);
-      if (span > FIND_EXTREME_MAX_DAYS) {
-        return err(
-          `Date range of ${span} days exceeds the ${FIND_EXTREME_MAX_DAYS}-day limit for find_gold_price_extreme.`,
-        );
-      }
-
-      const chunks = chunkDateRange(start_date, end_date, HISTORY_CHUNK_DAYS);
       const opts = { skipCache: skipCache ?? false };
-      const series: GoldSeriesPoint[] = [];
 
-      try {
-        for (const [chunkStart, chunkEnd] of chunks) {
+      return runExtremeFinder({
+        startDate: start_date,
+        endDate: end_date,
+        mode: extreme ?? "both",
+        fetchChunk: async (chunkStart, chunkEnd) => {
           const points = await client.getGoldPriceHistory(
             chunkStart,
             chunkEnd,
             opts,
           );
-          for (const p of points) {
-            series.push({ date: p.date, price: p.price });
-          }
-        }
-      } catch (e) {
-        if (e instanceof NbpApiError) {
-          return err(
-            formatNbpApiError(e, {
-              resource: "gold",
-              rangeStart: start_date,
-              rangeEnd: end_date,
-            }),
-          );
-        }
-        throw e;
-      }
-
-      if (series.length === 0) {
-        return err(
-          `No NBP gold data in the range ${start_date} → ${end_date}. NBP publishes on business days only.`,
-        );
-      }
-
-      return ok(
-        formatExtremeResponse(
-          computeExtremeStats(
-            series.map((p) => ({ date: p.date, value: p.price })),
-            mode,
-          ),
-        ),
-      );
+          return points.map((p) => ({ date: p.date, value: p.price }));
+        },
+        errorContext: { resource: "gold" },
+        emptyMessage: `No NBP gold data in the range ${start_date} → ${end_date}. NBP publishes on business days only.`,
+      });
     },
   );
 }
