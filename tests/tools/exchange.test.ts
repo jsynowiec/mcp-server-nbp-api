@@ -19,8 +19,8 @@ const TABLE_A_PAYLOAD = [
     no: "123/A/NBP/2024",
     effectiveDate: "2024-06-27",
     rates: [
-      { currency: "dolar amerykański", code: "USD", mid: 4.0 },
-      { currency: "euro", code: "EUR", mid: 4.32 },
+      { currency: "dolar amerykański", code: "USD", mid: 4.0312 },
+      { currency: "euro", code: "EUR", mid: 4.3085 },
     ],
   },
 ];
@@ -28,14 +28,14 @@ const TABLE_A_PAYLOAD = [
 const TABLE_C_PAYLOAD = [
   {
     table: "C",
-    no: "123/C/NBP/2024",
+    no: "124/C/NBP/2024",
     effectiveDate: "2024-06-27",
     rates: [
       {
         currency: "dolar amerykański",
         code: "USD",
-        bid: 3.95,
-        ask: 4.05,
+        bid: 4.2705,
+        ask: 4.3567,
       },
     ],
   },
@@ -45,28 +45,28 @@ const RATE_USD_PAYLOAD = {
   table: "A",
   currency: "dolar amerykański",
   code: "USD",
-  rates: [{ no: "123/A/NBP/2024", effectiveDate: "2024-06-27", mid: 4.0 }],
+  rates: [{ no: "124/A/NBP/2024", effectiveDate: "2024-06-27", mid: 4.0312 }],
 };
 
 const RATE_EUR_PAYLOAD = {
   table: "A",
   currency: "euro",
   code: "EUR",
-  rates: [{ no: "123/A/NBP/2024", effectiveDate: "2024-06-27", mid: 4.32 }],
+  rates: [{ no: "124/A/NBP/2024", effectiveDate: "2024-06-27", mid: 4.3085 }],
 };
 
 const RATE_GBP_PAYLOAD = {
   table: "A",
   currency: "funt szterling",
   code: "GBP",
-  rates: [{ no: "1/A/NBP/2024", effectiveDate: "2024-06-27", mid: 1.0 }],
+  rates: [{ no: "124/A/NBP/2024", effectiveDate: "2024-06-27", mid: 5.0934 }],
 };
 
 const RATE_JPY_PAYLOAD = {
   table: "A",
-  currency: "jen japoński",
+  currency: "jen (Japonia)",
   code: "JPY",
-  rates: [{ no: "1/A/NBP/2024", effectiveDate: "2024-06-27", mid: 7.0 }],
+  rates: [{ no: "124/A/NBP/2024", effectiveDate: "2024-06-27", mid: 0.025108 }],
 };
 
 const RATE_C_USD_PAYLOAD = {
@@ -75,10 +75,10 @@ const RATE_C_USD_PAYLOAD = {
   code: "USD",
   rates: [
     {
-      no: "123/C/NBP/2024",
+      no: "124/C/NBP/2024",
       effectiveDate: "2024-06-27",
-      bid: 3.95,
-      ask: 4.05,
+      bid: 4.2705,
+      ask: 4.3567,
     },
   ],
 };
@@ -151,9 +151,9 @@ describe("get_bid_ask_rates", () => {
 
     expect(result.isError).toBeFalsy();
     const text = getTextContent(result);
-    expect(text).toContain("bid: 3.95");
-    expect(text).toContain("ask: 4.05");
-    expect(text).toMatch(/spread:\s*0\.1/);
+    expect(text).toMatch(/bid:\s*4\.2705/);
+    expect(text).toMatch(/ask:\s*4\.3567/);
+    expect(text).toMatch(/spread:\s*0\.0862/); // 4.3567 - 4.2705 = 0.0862
   });
 
   test("includes totalBuyPln and totalSellPln when amount is provided", async () => {
@@ -167,8 +167,8 @@ describe("get_bid_ask_rates", () => {
 
     const text = getTextContent(result);
     expect(text).toContain("amount: 100");
-    expect(text).toMatch(/totalBuyPln:\s*395/);
-    expect(text).toMatch(/totalSellPln:\s*405/);
+    expect(text).toMatch(/totalBuyPln:\s*427\.05/); // 4.2705 * 100 = 427.05
+    expect(text).toMatch(/totalSellPln:\s*435\.67/); // 4.3567 * 100 = 435.67
   });
 
   test("currency outside Table C returns isError pointing to get_exchange_rate without calling NBP", async () => {
@@ -246,8 +246,8 @@ describe("convert_currency", () => {
 
     expect(result.isError).toBeFalsy();
     const text = getTextContent(result);
-    expect(text).toMatch(/rate:\s*4/);
-    expect(text).toMatch(/result:\s*400/);
+    expect(text).toMatch(/rate:\s*4\.0312/); // 4.0312
+    expect(text).toMatch(/result:\s*403\.12/); // 4.0312 * 100 = 403.12
   });
 
   test("converts PLN to a foreign currency by dividing by mid rate", async () => {
@@ -260,7 +260,7 @@ describe("convert_currency", () => {
     });
 
     const text = getTextContent(result);
-    expect(text).toMatch(/result:\s*100/);
+    expect(text).toMatch(/result:\s*99\.226/); // 400 / 4.0312 = round(99.2260369121, 4) = 99.2260
   });
 
   test("cross-currency conversion fetches both legs and computes the cross rate", async () => {
@@ -280,18 +280,12 @@ describe("convert_currency", () => {
     const text = getTextContent(result);
     expect(text).toContain("from: USD");
     expect(text).toContain("to: EUR");
-    expect(text).toMatch(/sourceMid:\s*4/);
-    expect(text).toMatch(/targetMid:\s*4\.32/);
-    // 100 USD = 100 * 4.0 PLN = 400 PLN / 4.32 = 92.59...
-    expect(text).toMatch(/result:\s*92\.5/);
+    expect(text).toMatch(/sourceMid:\s*4\.0312/);
+    expect(text).toMatch(/targetMid:\s*4\.3085/);
     expect(calls).toHaveLength(2);
   });
 
   test("cross-currency result is computed from the rounded rate, not the raw quotient", async () => {
-    // GBP mid=1, JPY mid=7 → crossRate=1/7=0.142857142...
-    // round(1/7, 6) = 0.142857
-    // Old (raw): round(700 * (1/7), 4) = round(100.0, 4) = 100.0   (inconsistent with displayed rate)
-    // New (rounded): round(700 * 0.142857, 4) = round(99.9999, 4) = 99.9999 (matches displayed rate)
     installFetch((url) => {
       if (url.includes("/GBP/")) return jsonResponse(RATE_GBP_PAYLOAD);
       return jsonResponse(RATE_JPY_PAYLOAD);
@@ -305,8 +299,8 @@ describe("convert_currency", () => {
 
     expect(result.isError).toBeFalsy();
     const text = getTextContent(result);
-    expect(text).toMatch(/rate:\s*0\.142857/);
-    expect(text).toMatch(/result:\s*99\.9999/);
+    expect(text).toMatch(/rate:\s*202\.859646/); // 5.0934 / 0.025108 = round(202.8596463279, 6) = 202.859646
+    expect(text).toMatch(/result:\s*142001\.7522/); // 700 * 202.859646 142,001.7522
   });
 
   test("propagates table=B to both legs of a cross-currency conversion", async () => {

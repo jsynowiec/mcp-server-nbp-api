@@ -335,8 +335,8 @@ export function registerExchangeTools(
             rate: roundedRate,
             result: round(amount * roundedRate, 4),
             effectiveDate: sourceQuote.effectiveDate,
-            sourceMid,
-            targetMid,
+            sourceMid: round(sourceMid, 6),
+            targetMid: round(targetMid, 6),
             note,
           }),
         );
