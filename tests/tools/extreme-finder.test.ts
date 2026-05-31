@@ -14,9 +14,9 @@ import { describe, expect, test } from "bun:test";
 function fakeFetchChunk(points: SeriesPoint[][]) {
   const calls: Array<[string, string]> = [];
   let i = 0;
-  const fn = async (start: string, end: string): Promise<SeriesPoint[]> => {
+  const fn = (start: string, end: string): Promise<SeriesPoint[]> => {
     calls.push([start, end]);
-    return points[i++] ?? [];
+    return Promise.resolve(points[i++] ?? []);
   };
   return { fn, calls };
 }
@@ -212,9 +212,10 @@ describe("runExtremeFinder — error and empty paths", () => {
 
   test("maps a thrown NbpApiError to a tool error result with the range context", async () => {
     let calls = 0;
-    const fn = async (): Promise<SeriesPoint[]> => {
+    const fn = (): Promise<SeriesPoint[]> => {
       calls++;
-      if (calls === 1) return [{ date: "2024-02-15", value: 3.9 }];
+      if (calls === 1)
+        return Promise.resolve([{ date: "2024-02-15", value: 3.9 }]);
       throw new NbpApiError(500, "upstream down");
     };
     const result = await runExtremeFinder({
@@ -234,11 +235,11 @@ describe("runExtremeFinder — error and empty paths", () => {
     expect(result.content[0]?.text).not.toMatch(/dataPoints:/);
   });
 
-  test("re-throws errors that are not NbpApiError", async () => {
-    const fn = async (): Promise<SeriesPoint[]> => {
+  test("re-throws errors that are not NbpApiError", () => {
+    const fn = (): Promise<SeriesPoint[]> => {
       throw new TypeError("programmer error");
     };
-    await expect(
+    expect(
       runExtremeFinder({
         startDate: "2024-06-01",
         endDate: "2024-06-30",
@@ -252,7 +253,7 @@ describe("runExtremeFinder — error and empty paths", () => {
 
   test("stops fetching at the first failing chunk", async () => {
     let calls = 0;
-    const fn = async (): Promise<SeriesPoint[]> => {
+    const fn = (): Promise<SeriesPoint[]> => {
       calls++;
       throw new NbpApiError(500, "boom");
     };

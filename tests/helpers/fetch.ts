@@ -21,7 +21,12 @@ export function installFetch(
 ): InstalledFetch {
   const calls: MockCall[] = [];
   const fn = mock(async (input: FetchInput, init?: FetchInit) => {
-    const url = typeof input === "string" ? input : input.toString();
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof Request
+          ? input.url
+          : input.toString();
     calls.push({ url, init });
     return handler(url);
   });

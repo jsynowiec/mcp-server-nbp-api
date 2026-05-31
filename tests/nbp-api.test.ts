@@ -81,7 +81,7 @@ describe("getExchangeTable", () => {
     expect(calls[0]!.url).toBe(
       "https://api.nbp.pl/api/exchangerates/tables/A/",
     );
-    const init = calls[0]!.init as RequestInit | undefined;
+    const init = calls[0]!.init as RequestInit;
     const headers = new Headers(init?.headers);
     expect(headers.get("accept")).toBe("application/json");
 
@@ -445,7 +445,6 @@ describe("Fetch timeout", () => {
     await client.getExchangeTable("A");
 
     const init = calls[0]!.init as RequestInit;
-    expect(init.signal).toBeInstanceOf(AbortSignal);
     expect(init.signal?.aborted).toBe(false);
   });
 

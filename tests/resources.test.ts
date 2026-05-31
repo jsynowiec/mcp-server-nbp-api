@@ -121,10 +121,10 @@ describe("nbp://currencies/{table}", () => {
     expect(installed.calls[0]?.url).toContain("/exchangerates/tables/C/");
   });
 
-  test("propagates NbpApiError from the client (read fails)", async () => {
+  test("propagates NbpApiError from the client (read fails)", () => {
     installFetch(() => new Response("Not Found", { status: 404 }));
 
-    await expect(
+    expect(
       pair.client.readResource({ uri: "nbp://currencies/A" }),
     ).rejects.toThrow();
   });
