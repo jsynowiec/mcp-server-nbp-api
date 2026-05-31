@@ -10,24 +10,18 @@ import {
   formatRate,
 } from "#/tools/format.js";
 import { err, ok } from "#/tools/result.js";
+import {
+  currencyCodeSchema,
+  midTableEnum,
+  skipCacheSchema,
+  tableEnum,
+} from "#/tools/schemas.js";
 import { computeHistoryStats } from "#/tools/stats.js";
 import { daysInclusive, round, validateDate } from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-
-const tableEnum = z.enum(["A", "B", "C"]);
-const midTableEnum = z.enum(["A", "B"]);
-const currencyCodeSchema = z
-  .string()
-  .regex(/^[A-Za-z]{3}$/, "Expected a 3-letter ISO 4217 currency code");
-const skipCacheSchema = z
-  .boolean()
-  .optional()
-  .describe(
-    "Bypass the in-process cache and fetch a fresh value from NBP. Default: false.",
-  );
 
 export function registerRateTools(
   server: McpServer,

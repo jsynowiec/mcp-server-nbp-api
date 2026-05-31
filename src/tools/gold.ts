@@ -13,19 +13,12 @@ import {
   type GoldSeriesPoint,
 } from "#/tools/format.js";
 import { err, ok } from "#/tools/result.js";
+import { extremeEnum, skipCacheSchema } from "#/tools/schemas.js";
 import { computeHistoryStats } from "#/tools/stats.js";
 import { daysInclusive, round, validateDate } from "#/tools/utils.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-
-const extremeEnum = z.enum(["min", "max", "both"]);
-const skipCacheSchema = z
-  .boolean()
-  .optional()
-  .describe(
-    "Bypass the in-process cache and fetch a fresh value from NBP. Default: false.",
-  );
 
 export function registerGoldTools(
   server: McpServer,
