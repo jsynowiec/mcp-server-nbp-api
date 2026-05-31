@@ -300,6 +300,8 @@ describe("compare_currencies", () => {
     expect(text).toContain("USD");
     expect(text).toContain("EUR");
     expect(text).toContain("CHF");
+    // rows are emitted under a named field, matching the rest of the TOON helpers
+    expect(text).toMatch(/rows\[3\]\{code,currency,mid\}:/);
     // sorted ascending by mid: USD (3.9876), EUR (4.3201), CHF (4.45)
     const usdIdx = text.indexOf("USD");
     const eurIdx = text.indexOf("EUR");

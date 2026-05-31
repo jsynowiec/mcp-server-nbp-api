@@ -139,10 +139,10 @@ export interface ComparisonView {
 }
 
 export function formatComparison(view: ComparisonView): string {
-  const header = `table: ${view.table}\neffectiveDate: ${view.effectiveDate}\n`;
-  let text = header + encode(view.rows);
-  if (view.missing && view.missing.length > 0) {
-    text += `\n\nNot found in Table ${view.table}: ${view.missing.join(", ")} — use list_currencies to see available codes.`;
+  const { missing, ...payload } = view;
+  let text = encode(payload);
+  if (missing && missing.length > 0) {
+    text += `\n\nNot found in Table ${view.table}: ${missing.join(", ")} — use list_currencies to see available codes.`;
   }
   return text;
 }

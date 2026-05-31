@@ -173,6 +173,22 @@ describe("get_bid_ask_rates", () => {
     expect(text).toMatch(/get_exchange_rate/);
   });
 
+  test("404 with a date returns the business-day hint, not the not-in-Table-C hint", async () => {
+    installFetch(() => new Response("404", { status: 404 }));
+    activePair = await setupPair();
+
+    const result = await activePair.client.callTool({
+      name: "get_bid_ask_rates",
+      arguments: { currency: "USD", date: "2024-06-30" },
+    });
+
+    expect(result.isError).toBe(true);
+    const text = getTextContent(result);
+    expect(text).toMatch(/business days/i);
+    expect(text).not.toMatch(/get_exchange_rate/);
+    expect(text).not.toMatch(/not available in Table C/);
+  });
+
   test("queries Table C even though no table parameter exists", async () => {
     const { calls } = installFetch(() => jsonResponse(RATE_C_USD_PAYLOAD));
     activePair = await setupPair();

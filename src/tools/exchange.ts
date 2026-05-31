@@ -195,12 +195,9 @@ export function registerExchangeTools(
         );
       } catch (e) {
         if (e instanceof NbpApiError) {
-          if (e.statusCode === 404) {
-            const dateNote = date
-              ? ` for ${date} (or '${upperCode}' may not be in Table C)`
-              : "";
+          if (e.statusCode === 404 && !date) {
             return err(
-              `'${upperCode}' is not available in Table C (buy/sell)${dateNote}. Use get_exchange_rate for the mid rate instead.`,
+              `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
             );
           }
           return err(

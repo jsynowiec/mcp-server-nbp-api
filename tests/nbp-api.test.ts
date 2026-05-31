@@ -345,6 +345,27 @@ describe("error mapping", () => {
     expect((caught as NbpApiError).message).toMatch(/network/i);
   });
 
+  test("non-JSON response body throws NbpApiError (not SyntaxError)", async () => {
+    installFetch(
+      () =>
+        new Response("<html>NBP maintenance</html>", {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const client = new NbpApiClient();
+
+    let caught: unknown;
+    try {
+      await client.getExchangeTable("A");
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeInstanceOf(NbpApiError);
+    expect((caught as NbpApiError).message).toMatch(/invalid JSON/i);
+  });
+
   test("failed responses are not cached", async () => {
     let callCount = 0;
     const { calls } = installFetch(() => {

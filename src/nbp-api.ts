@@ -153,7 +153,13 @@ export class NbpApiClient {
       );
     }
 
-    const data = (await response.json()) as T;
+    let data: T;
+    try {
+      data = (await response.json()) as T;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new NbpApiError(502, `invalid JSON from NBP: ${msg}`);
+    }
     const isEmptyArray = Array.isArray(data) && data.length === 0;
     if (!skipCache && !isEmptyArray) {
       this.cache.set(path, data as CachedValue);
