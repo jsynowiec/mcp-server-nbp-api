@@ -9,7 +9,8 @@
     "mcp-server-nbp-api": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/**/*.map"
   ],
   "imports": {
     "#/*": {
