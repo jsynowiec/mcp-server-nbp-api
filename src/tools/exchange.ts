@@ -142,6 +142,7 @@ export function registerExchangeTools(
           skipCache: skipCache ?? false,
         });
         const quote = rate.rates[0];
+        // NOTE: This is now possibly redundant because of the currency guard and could be missleading
         if (!quote || quote.bid === undefined || quote.ask === undefined) {
           return err(
             `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
@@ -169,6 +170,7 @@ export function registerExchangeTools(
         );
       } catch (e) {
         if (e instanceof NbpApiError) {
+          // NOTE: This is now possibly redundant because of the currency guard and could be missleading
           if (e.statusCode === 404 && !date) {
             return err(
               `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
