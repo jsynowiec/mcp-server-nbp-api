@@ -21,9 +21,6 @@ export function formatNbpApiError(
   const { resource, table, code, date, rangeStart, rangeEnd } = context;
 
   if (err.statusCode === 404) {
-    if (resource === "rate" && code && !date && !rangeStart) {
-      return `Currency '${code}' not found in Table ${table ?? "A"}. Use list_currencies to see available codes.`;
-    }
     if (date && date === getWarsawToday()) {
       return `Today's rates not yet published (NBP typically publishes around 11:30 CET). Omit the date to get the most recent available rates.`;
     }
@@ -33,6 +30,9 @@ export function formatNbpApiError(
     if (rangeStart && rangeEnd) {
       const subject = code ? `${code} in the range` : "the range";
       return `No NBP data for ${subject} ${rangeStart} → ${rangeEnd}. NBP publishes on business days only and the requested range may include no published values.`;
+    }
+    if (resource === "rate" && code) {
+      return `NBP returned 404 for ${code} in Table ${table ?? "A"}. The API may be temporarily unavailable, or ${code} may have been removed from the live table. Verify using list_currencies.`;
     }
     return `NBP returned 404 Not Found for the requested ${resource}.`;
   }
