@@ -46,7 +46,7 @@ export function registerExchangeTools(
           ),
         skipCache: skipCacheSchema,
       },
-      annotations: { readOnlyHint: true },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ table, date, skipCache }) => {
       const effectiveTable: TableType = table ?? "A";
@@ -380,7 +380,7 @@ export function registerExchangeTools(
           .describe("Mid-rate table: A (default) or B."),
         skipCache: skipCacheSchema,
       },
-      annotations: { readOnlyHint: true },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ currency, start_date, end_date, extreme, table, skipCache }) => {
       const upperCode = currency.toUpperCase();

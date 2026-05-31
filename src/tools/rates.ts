@@ -41,7 +41,7 @@ export function registerRateTools(
           ),
         skipCache: skipCacheSchema,
       },
-      annotations: { readOnlyHint: true },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ table, skipCache }) => {
       const effectiveTable: TableType = table ?? "A";
@@ -174,7 +174,7 @@ export function registerRateTools(
           .describe("Mid-rate table: A (default) or B."),
         skipCache: skipCacheSchema,
       },
-      annotations: { readOnlyHint: true },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ currency, start_date, end_date, table, skipCache }) => {
       const effectiveTable: TableType = table ?? "A";

@@ -46,7 +46,7 @@ export function registerGoldTools(
           ),
         skipCache: skipCacheSchema,
       },
-      annotations: { readOnlyHint: true },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ amount_grams, date, skipCache }) => {
       const dateError = checkDates([date, "date"]);
@@ -93,7 +93,7 @@ export function registerGoldTools(
           .describe("Range end date (YYYY-MM-DD, Europe/Warsaw)."),
         skipCache: skipCacheSchema,
       },
-      annotations: { readOnlyHint: true },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ start_date, end_date, skipCache }) => {
       const dateError = checkDates(
@@ -170,7 +170,7 @@ export function registerGoldTools(
           ),
         skipCache: skipCacheSchema,
       },
-      annotations: { readOnlyHint: true },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ start_date, end_date, extreme, skipCache }) => {
       const opts = { skipCache: skipCache ?? false };
