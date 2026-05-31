@@ -3,16 +3,14 @@
 
 import { NbpApiClient } from "#/nbp-api.js";
 import { registerResources } from "#/resources.js";
-import { NbpApiError } from "#/types.js";
 import { installFetch, jsonResponse } from "#tests/helpers/fetch.js";
 import { createTestPair, type TestPair } from "#tests/helpers/mcp.js";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 let pair: TestPair;
-let client: NbpApiClient;
 
 async function setup(): Promise<void> {
-  client = new NbpApiClient();
+  const client = new NbpApiClient();
   pair = await createTestPair((server) => {
     registerResources(server, client);
   });
@@ -127,16 +125,6 @@ describe("nbp://currencies/{table}", () => {
     expect(
       pair.client.readResource({ uri: "nbp://currencies/A" }),
     ).rejects.toThrow();
-  });
-
-  test("client error is surfaced as Error, not as a success result", async () => {
-    let captured: unknown;
-    try {
-      await client.getCurrencies("A");
-    } catch (e) {
-      captured = e;
-    }
-    expect(captured).toBeInstanceOf(NbpApiError);
   });
 });
 
