@@ -139,12 +139,7 @@ export interface ComparisonView {
 }
 
 export function formatComparison(view: ComparisonView): string {
-  const { missing, ...payload } = view;
-  let text = encode(payload);
-  if (missing && missing.length > 0) {
-    text += `\n\nNot found in Table ${view.table}: ${missing.join(", ")} — use list_currencies to see available codes.`;
-  }
-  return text;
+  return encode(stripUndefined(view));
 }
 
 function stripUndefined(obj: object): Record<string, unknown> {

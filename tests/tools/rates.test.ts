@@ -312,7 +312,7 @@ describe("compare_currencies", () => {
     expect(text).not.toMatch(/Not found/);
   });
 
-  test("appends a missing-code note when some requested codes are not in the table", async () => {
+  test("emits a TOON missing[] field when some requested codes are not in the table", async () => {
     installFetch(() => jsonResponse(TABLE_A_PAYLOAD));
     activePair = await setupPair();
 
@@ -323,9 +323,7 @@ describe("compare_currencies", () => {
 
     expect(result.isError).toBeFalsy();
     const text = getTextContent(result);
-    expect(text).toMatch(/Not found in Table A:.*XYZ/);
-    expect(text).toMatch(/QQQ/);
-    expect(text).toMatch(/list_currencies/);
+    expect(text).toContain("missing[2]: XYZ,QQQ");
   });
 
   test("rejects fewer than one code with isError and a min-element message", async () => {
