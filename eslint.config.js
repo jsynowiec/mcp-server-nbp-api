@@ -4,16 +4,22 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  globalIgnores(["dist"]),
+  globalIgnores(["dist", ".claude/worktrees"]),
   js.configs.recommended,
   tseslint.configs.recommended,
   {
-    files: ["src/**/*.ts", "tests/**/*.ts"],
     languageOptions: {
       globals: globals.node,
       parserOptions: {
         tsconfigRootDir: import.meta.dirname,
-        projects: ["tsconfig.json"],
+      },
+    },
+  },
+  {
+    files: ["src/**/*.ts", "tests/**/*.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: "tsconfig.json",
       },
     },
   },
