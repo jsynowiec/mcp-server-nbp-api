@@ -15,7 +15,7 @@ import { LRUCache } from "lru-cache";
 const BASE_URL = "https://api.nbp.pl/api";
 const CACHE_MAX_ENTRIES = 100;
 const CACHE_TTL_MS = 15 * 60 * 1000;
-const REQUEST_TIMEOUT = 60 * 1000;
+const REQUEST_TIMEOUT = 15 * 1000;
 
 interface RawExchangeTable {
   table: TableType;
