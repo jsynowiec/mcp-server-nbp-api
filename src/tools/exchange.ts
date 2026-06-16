@@ -16,7 +16,7 @@ import {
   skipCacheSchema,
   tableEnum,
 } from "#/tools/schemas.js";
-import { checkDates, round } from "#/tools/utils.js";
+import { checkDates, RATES_START_DATE, round } from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -51,7 +51,7 @@ export function registerExchangeTools(
     async ({ table, date, skipCache }) => {
       const effectiveTable: TableType = table ?? "A";
 
-      const dateError = checkDates([date, "date"]);
+      const dateError = checkDates([date, "date", RATES_START_DATE]);
       if (dateError) return dateError;
 
       try {
@@ -134,7 +134,7 @@ export function registerExchangeTools(
     async ({ currency, amount, date, skipCache }) => {
       const upperCode = currency.toUpperCase();
 
-      const dateError = checkDates([date, "date"]);
+      const dateError = checkDates([date, "date", RATES_START_DATE]);
       if (dateError) return dateError;
 
       try {
@@ -222,7 +222,7 @@ export function registerExchangeTools(
       const to = to_currency.toUpperCase();
       const effectiveTable: TableType = table ?? "A";
 
-      const dateError = checkDates([date, "date"]);
+      const dateError = checkDates([date, "date", RATES_START_DATE]);
       if (dateError) return dateError;
 
       if (from === to) {
@@ -396,6 +396,7 @@ export function registerExchangeTools(
           code: upperCode,
         },
         emptyMessage: `No NBP data in the range ${start_date} → ${end_date} for ${upperCode}. NBP publishes on business days only.`,
+        minDate: RATES_START_DATE,
       });
     },
   );

@@ -17,7 +17,12 @@ import {
   tableEnum,
 } from "#/tools/schemas.js";
 import { computeHistoryStats } from "#/tools/stats.js";
-import { checkDates, daysInclusive, round } from "#/tools/utils.js";
+import {
+  checkDates,
+  daysInclusive,
+  RATES_START_DATE,
+  round,
+} from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -100,7 +105,7 @@ export function registerRateTools(
       const effectiveTable: TableType = table ?? "A";
       const upperCode = currency.toUpperCase();
 
-      const dateError = checkDates([date, "date"]);
+      const dateError = checkDates([date, "date", RATES_START_DATE]);
       if (dateError) return dateError;
 
       try {
@@ -175,8 +180,8 @@ export function registerRateTools(
       const upperCode = currency.toUpperCase();
 
       const dateError = checkDates(
-        [start_date, "start_date"],
-        [end_date, "end_date"],
+        [start_date, "start_date", RATES_START_DATE],
+        [end_date, "end_date", RATES_START_DATE],
       );
       if (dateError) return dateError;
 
@@ -264,7 +269,7 @@ export function registerRateTools(
       const effectiveTable: TableType = table ?? "A";
       const requested = currencies.map((c) => c.toUpperCase());
 
-      const dateError = checkDates([date, "date"]);
+      const dateError = checkDates([date, "date", RATES_START_DATE]);
       if (dateError) return dateError;
 
       try {

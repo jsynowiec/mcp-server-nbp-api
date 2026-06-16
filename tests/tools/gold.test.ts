@@ -99,6 +99,20 @@ describe("get_gold_price", () => {
     expect(getTextContent(result)).toMatch(/business days/i);
   });
 
+  test("rejects dates before 2013-01-02 without calling the API", async () => {
+    const { calls } = installFetch(() => jsonResponse(GOLD_LATEST_PAYLOAD));
+    activePair = await setupPair();
+
+    const result = await activePair.client.callTool({
+      name: "get_gold_price",
+      arguments: { date: "2012-06-15" },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(getTextContent(result)).toMatch(/2013-01-02/);
+    expect(calls).toHaveLength(0);
+  });
+
   test("returns isError with future-date message when date is in the future", async () => {
     installFetch(() => jsonResponse(GOLD_LATEST_PAYLOAD));
     activePair = await setupPair();

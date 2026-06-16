@@ -3,6 +3,9 @@
 
 import { err, type ToolResult } from "#/tools/result.js";
 
+export const RATES_START_DATE = "2002-01-02";
+export const GOLD_START_DATE = "2013-01-02";
+
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -58,12 +61,14 @@ export function round(value: number, decimals: number): number {
 }
 
 export function checkDates(
-  ...entries: Array<[string | undefined, string]>
+  ...entries: Array<
+    [string | undefined, string] | [string | undefined, string, string]
+  >
 ): ToolResult | undefined {
-  for (const [date, field] of entries) {
+  for (const [date, field, minDate] of entries) {
     if (date === undefined) continue;
     try {
-      validateDate(date, field);
+      validateDate(date, field, minDate);
     } catch (e) {
       return err((e as Error).message);
     }
@@ -71,7 +76,11 @@ export function checkDates(
   return undefined;
 }
 
-export function validateDate(date: string, fieldName: string): void {
+export function validateDate(
+  date: string,
+  fieldName: string,
+  minDate?: string,
+): void {
   if (!DATE_PATTERN.test(date)) {
     throw new Error(
       `Invalid date '${date}' for '${fieldName}'. Expected YYYY-MM-DD calendar date.`,
@@ -88,6 +97,12 @@ export function validateDate(date: string, fieldName: string): void {
   if (date > getWarsawToday()) {
     throw new Error(
       `Date '${date}' for '${fieldName}' is in the future. NBP only publishes historical rates.`,
+    );
+  }
+
+  if (minDate && date < minDate) {
+    throw new Error(
+      `Date '${date}' for '${fieldName}' is before the earliest available data (${minDate}).`,
     );
   }
 }

@@ -3,8 +3,8 @@
 
 import { NbpApiClient } from "#/nbp-api.js";
 import { registerRateTools } from "#/tools/rates.js";
-import { warsawTomorrow } from "#tests/helpers/dates.js";
 import { getWarsawToday } from "#/tools/utils.js";
+import { warsawTomorrow } from "#tests/helpers/dates.js";
 import { installFetch, jsonResponse } from "#tests/helpers/fetch.js";
 import {
   createTestPair,
@@ -177,6 +177,20 @@ describe("get_exchange_rate", () => {
     const text = getTextContent(result);
     expect(text).toMatch(/XYZ/);
     expect(text).toMatch(/list_currencies/);
+  });
+
+  test("rejects dates before 2002-01-02 without calling the API", async () => {
+    const { calls } = installFetch(() => jsonResponse(RATE_USD_PAYLOAD));
+    activePair = await setupPair();
+
+    const result = await activePair.client.callTool({
+      name: "get_exchange_rate",
+      arguments: { currency: "USD", date: "2001-06-15" },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(getTextContent(result)).toMatch(/2002-01-02/);
+    expect(calls).toHaveLength(0);
   });
 
   test("does not pre-filter currency codes absent from the static map", async () => {

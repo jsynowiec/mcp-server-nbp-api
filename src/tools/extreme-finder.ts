@@ -18,17 +18,25 @@ export interface ExtremeFinderConfig {
   fetchChunk: (chunkStart: string, chunkEnd: string) => Promise<SeriesPoint[]>;
   errorContext: Omit<NbpErrorContext, "rangeStart" | "rangeEnd">;
   emptyMessage: string;
+  minDate?: string;
 }
 
 export async function runExtremeFinder(
   config: ExtremeFinderConfig,
 ): Promise<ToolResult> {
-  const { startDate, endDate, mode, fetchChunk, errorContext, emptyMessage } =
-    config;
+  const {
+    startDate,
+    endDate,
+    mode,
+    fetchChunk,
+    errorContext,
+    emptyMessage,
+    minDate,
+  } = config;
 
   const dateError = checkDates(
-    [startDate, "start_date"],
-    [endDate, "end_date"],
+    [startDate, "start_date", minDate],
+    [endDate, "end_date", minDate],
   );
   if (dateError) return dateError;
 

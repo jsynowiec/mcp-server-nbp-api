@@ -15,7 +15,12 @@ import {
 import { err, ok } from "#/tools/result.js";
 import { extremeEnum, skipCacheSchema } from "#/tools/schemas.js";
 import { computeHistoryStats } from "#/tools/stats.js";
-import { checkDates, daysInclusive, round } from "#/tools/utils.js";
+import {
+  checkDates,
+  daysInclusive,
+  GOLD_START_DATE,
+  round,
+} from "#/tools/utils.js";
 import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -49,7 +54,7 @@ export function registerGoldTools(
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ amount_grams, date, skipCache }) => {
-      const dateError = checkDates([date, "date"]);
+      const dateError = checkDates([date, "date", GOLD_START_DATE]);
       if (dateError) return dateError;
 
       try {
@@ -97,8 +102,8 @@ export function registerGoldTools(
     },
     async ({ start_date, end_date, skipCache }) => {
       const dateError = checkDates(
-        [start_date, "start_date"],
-        [end_date, "end_date"],
+        [start_date, "start_date", GOLD_START_DATE],
+        [end_date, "end_date", GOLD_START_DATE],
       );
       if (dateError) return dateError;
 
@@ -189,6 +194,7 @@ export function registerGoldTools(
         },
         errorContext: { resource: "gold" },
         emptyMessage: `No NBP gold data in the range ${start_date} → ${end_date}. NBP publishes on business days only.`,
+        minDate: GOLD_START_DATE,
       });
     },
   );

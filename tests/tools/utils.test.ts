@@ -6,6 +6,8 @@ import {
   chunkDateRange,
   daysInclusive,
   getWarsawToday,
+  GOLD_START_DATE,
+  RATES_START_DATE,
   round,
   validateDate,
 } from "#/tools/utils.js";
@@ -145,6 +147,24 @@ describe("validateDate", () => {
     expect(() => {
       validateDate("not-a-date", "start_date");
     }).toThrow(/start_date/);
+  });
+
+  test("rejects a date before RATES_START_DATE when minDate is provided", () => {
+    expect(() => {
+      validateDate("2001-12-31", "date", RATES_START_DATE);
+    }).toThrow(/2002-01-02/);
+  });
+
+  test("rejects a date before GOLD_START_DATE when minDate is provided", () => {
+    expect(() => {
+      validateDate("2012-12-31", "date", GOLD_START_DATE);
+    }).toThrow(/2013-01-02/);
+  });
+
+  test("accepts a date exactly at the minDate floor", () => {
+    expect(() => {
+      validateDate(RATES_START_DATE, "date", RATES_START_DATE);
+    }).not.toThrow();
   });
 });
 
