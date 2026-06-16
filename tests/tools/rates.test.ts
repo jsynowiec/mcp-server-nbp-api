@@ -4,6 +4,7 @@
 import { NbpApiClient } from "#/nbp-api.js";
 import { registerRateTools } from "#/tools/rates.js";
 import { warsawTomorrow } from "#tests/helpers/dates.js";
+import { getWarsawToday } from "#/tools/utils.js";
 import { installFetch, jsonResponse } from "#tests/helpers/fetch.js";
 import {
   createTestPair,
@@ -304,6 +305,24 @@ describe("get_rate_history", () => {
     });
 
     expect(fetchFn.mock.calls).toHaveLength(0);
+  });
+
+  test("404 for range ending today includes the 11:30 CET publication-time hint", async () => {
+    installFetch(() => new Response("404", { status: 404 }));
+    activePair = await setupPair();
+
+    const result = await activePair.client.callTool({
+      name: "get_rate_history",
+      arguments: {
+        currency: "USD",
+        start_date: getWarsawToday(),
+        end_date: getWarsawToday(),
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    const text = getTextContent(result);
+    expect(text).toMatch(/11:30 CET/);
   });
 });
 

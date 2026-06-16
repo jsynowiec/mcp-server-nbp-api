@@ -29,7 +29,11 @@ export function formatNbpApiError(
     }
     if (rangeStart && rangeEnd) {
       const subject = code ? `${code} in the range` : "the range";
-      return `No NBP data for ${subject} ${rangeStart} → ${rangeEnd}. NBP publishes on business days only and the requested range may include no published values.`;
+      const todayHint =
+        rangeEnd === getWarsawToday()
+          ? " Today's rates may not yet be published (NBP typically publishes around 11:30 CET)."
+          : "";
+      return `No NBP data for ${subject} ${rangeStart} → ${rangeEnd}. NBP publishes on business days only and the requested range may include no published values.${todayHint}`;
     }
     if (resource === "rate" && code) {
       return `NBP returned 404 for ${code} in Table ${table ?? "A"}. The API may be temporarily unavailable, or ${code} may have been removed from the live table. Verify using list_currencies.`;
