@@ -18,7 +18,7 @@ import {
 } from "#/tools/schemas.js";
 import { checkDates, round } from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
-import { isCurrencyForTable, NbpApiError } from "#/types.js";
+import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
@@ -137,12 +137,6 @@ export function registerExchangeTools(
       const dateError = checkDates([date, "date"]);
       if (dateError) return dateError;
 
-      if (!isCurrencyForTable("C", upperCode)) {
-        return err(
-          `'${upperCode}' is not available in Table C (buy/sell). Use get_exchange_rate for the mid rate instead.`,
-        );
-      }
-
       try {
         const rate = await client.getExchangeRate("C", upperCode, date, {
           skipCache: skipCache ?? false,
@@ -231,17 +225,6 @@ export function registerExchangeTools(
       const dateError = checkDates([date, "date"]);
       if (dateError) return dateError;
 
-      if (from !== "PLN" && !isCurrencyForTable(effectiveTable, from)) {
-        return err(
-          `Currency '${from}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
-        );
-      }
-      if (to !== "PLN" && !isCurrencyForTable(effectiveTable, to)) {
-        return err(
-          `Currency '${to}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
-        );
-      }
-
       if (from === to) {
         return ok(
           formatConversion({
@@ -258,6 +241,8 @@ export function registerExchangeTools(
       const opts = { skipCache: skipCache ?? false };
       const note =
         "Reference mid rate — use get_bid_ask_rates for actual bank transaction rates.";
+      const codeForError =
+        from === "PLN" ? to : to === "PLN" ? from : `${from}/${to}`;
 
       try {
         if (from === "PLN") {
@@ -346,6 +331,7 @@ export function registerExchangeTools(
             formatNbpApiError(e, {
               resource: "rate",
               table: effectiveTable,
+              code: codeForError,
               date,
             }),
           );
@@ -387,12 +373,6 @@ export function registerExchangeTools(
       const upperCode = currency.toUpperCase();
       const effectiveTable: TableType = table ?? "A";
       const opts = { skipCache: skipCache ?? false };
-
-      if (!isCurrencyForTable(effectiveTable, upperCode)) {
-        return err(
-          `Currency '${upperCode}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
-        );
-      }
 
       return runExtremeFinder({
         startDate: start_date,

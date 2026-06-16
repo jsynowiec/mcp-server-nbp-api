@@ -178,6 +178,27 @@ describe("get_exchange_rate", () => {
     expect(text).toMatch(/list_currencies/);
   });
 
+  test("does not pre-filter currency codes absent from the static map", async () => {
+    const TWD_PAYLOAD = {
+      table: "A",
+      currency: "dolar tajwański",
+      code: "TWD",
+      rates: [{ no: "1/A/NBP/2024", effectiveDate: "2024-06-27", mid: 0.1234 }],
+    };
+    installFetch(() => jsonResponse(TWD_PAYLOAD));
+    activePair = await setupPair();
+
+    const result = await activePair.client.callTool({
+      name: "get_exchange_rate",
+      arguments: { currency: "TWD" },
+    });
+
+    expect(result.isError).toBeFalsy();
+    const text = getTextContent(result);
+    expect(text).toMatch(/TWD/);
+    expect(text).toMatch(/0\.1234/);
+  });
+
   test("returns isError with future-date message when date is in the future (Warsaw TZ)", async () => {
     installFetch(() => jsonResponse(RATE_USD_PAYLOAD));
     activePair = await setupPair();

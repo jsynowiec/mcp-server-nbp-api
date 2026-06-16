@@ -83,6 +83,20 @@ const RATE_C_USD_PAYLOAD = {
   ],
 };
 
+const RATE_C_HKD_PAYLOAD = {
+  table: "C",
+  currency: "dolar hongkoński",
+  code: "HKD",
+  rates: [
+    {
+      no: "124/C/NBP/2024",
+      effectiveDate: "2024-06-27",
+      bid: 0.5121,
+      ask: 0.5231,
+    },
+  ],
+};
+
 async function setupPair(): Promise<TestPair> {
   const apiClient = new NbpApiClient();
   return createTestPair((server) => {
@@ -171,8 +185,23 @@ describe("get_bid_ask_rates", () => {
     expect(text).toMatch(/totalSellPln:\s*435\.67/); // 4.3567 * 100 = 435.67
   });
 
-  test("currency outside Table C returns isError pointing to get_exchange_rate without calling NBP", async () => {
-    const { calls } = installFetch(() => jsonResponse(RATE_C_USD_PAYLOAD));
+  test("accepts a valid Table C currency absent from the old static map (e.g. HKD)", async () => {
+    installFetch(() => jsonResponse(RATE_C_HKD_PAYLOAD));
+    activePair = await setupPair();
+
+    const result = await activePair.client.callTool({
+      name: "get_bid_ask_rates",
+      arguments: { currency: "HKD" },
+    });
+
+    expect(result.isError).toBeFalsy();
+    const text = getTextContent(result);
+    expect(text).toMatch(/bid:\s*0\.5121/);
+    expect(text).toMatch(/ask:\s*0\.5231/);
+  });
+
+  test("currency not in Table C returns isError via API 404 mentioning the code", async () => {
+    const { calls } = installFetch(() => new Response("404", { status: 404 }));
     activePair = await setupPair();
 
     const result = await activePair.client.callTool({
@@ -183,9 +212,7 @@ describe("get_bid_ask_rates", () => {
     expect(result.isError).toBe(true);
     const text = getTextContent(result);
     expect(text).toMatch(/KRW/);
-    expect(text).toMatch(/Table C/);
-    expect(text).toMatch(/get_exchange_rate/);
-    expect(calls).toHaveLength(0);
+    expect(calls).toHaveLength(1);
   });
 
   test("404 with a date returns the business-day hint", async () => {

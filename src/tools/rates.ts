@@ -19,7 +19,7 @@ import {
 import { computeHistoryStats } from "#/tools/stats.js";
 import { checkDates, daysInclusive, round } from "#/tools/utils.js";
 import type { TableType } from "#/types.js";
-import { isCurrencyForTable, NbpApiError } from "#/types.js";
+import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
@@ -103,12 +103,6 @@ export function registerRateTools(
       const dateError = checkDates([date, "date"]);
       if (dateError) return dateError;
 
-      if (!isCurrencyForTable(effectiveTable, upperCode)) {
-        return err(
-          `Currency '${upperCode}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
-        );
-      }
-
       try {
         const rate = await client.getExchangeRate(
           effectiveTable,
@@ -185,12 +179,6 @@ export function registerRateTools(
         [end_date, "end_date"],
       );
       if (dateError) return dateError;
-
-      if (!isCurrencyForTable(effectiveTable, upperCode)) {
-        return err(
-          `Currency '${upperCode}' not found in Table ${effectiveTable}. Use list_currencies to see available codes.`,
-        );
-      }
 
       if (start_date > end_date) {
         return err(
