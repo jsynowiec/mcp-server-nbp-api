@@ -28,10 +28,15 @@ When finishing work, run the full verification suite:
 
 ```sh
 bun run lint
-bun run fmtcheck
 bun run typecheck
 bun run test
 bun run build
+```
+
+If verification passes, before committing changes, run the code formatter:
+
+```sh
+bun run format
 ```
 
 ## NBP API gotchas

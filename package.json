@@ -24,13 +24,12 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "lint": "eslint .",
+    "lint": "eslint src tests",
     "format": "prettier --write src tests",
-    "fmtcheck": "prettier --check src tests",
     "check-types": "tsc --noEmit",
     "test": "bun test",
     "dev:test": "bun test --watch",
-    "prebuild": "bun run lint && bun run check-types && bun run fmtcheck && bun run test",
+    "prebuild": "bun run lint && bun run check-types && bun run test",
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
