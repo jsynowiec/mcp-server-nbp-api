@@ -57,6 +57,9 @@
     "url": "https://github.com/jsynowiec/mcp-server-nbp-api/issues"
   },
   "homepage": "https://github.com/jsynowiec/mcp-server-nbp-api#readme",
+  "overrides": {
+    "zod": "^4.4.3"
+  },
   "keywords": [
     "mcp",
     "model-context-protocol",
