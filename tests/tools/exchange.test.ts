@@ -170,7 +170,7 @@ describe("get_bid_ask_rates", () => {
     expect(text).toMatch(/spread:\s*0\.0862/); // 4.3567 - 4.2705 = 0.0862
   });
 
-  test("includes totalBuyPln and totalSellPln when amount is provided", async () => {
+  test("includes totalAtBidPln and totalAtAskPln when amount is provided", async () => {
     installFetch(() => jsonResponse(RATE_C_USD_PAYLOAD));
     activePair = await setupPair();
 
@@ -181,8 +181,10 @@ describe("get_bid_ask_rates", () => {
 
     const text = getTextContent(result);
     expect(text).toContain("amount: 100");
-    expect(text).toMatch(/totalBuyPln:\s*427\.05/); // 4.2705 * 100 = 427.05
-    expect(text).toMatch(/totalSellPln:\s*435\.67/); // 4.3567 * 100 = 435.67
+    expect(text).toMatch(/totalAtBidPln:\s*427\.05/); // 4.2705 * 100 = 427.05
+    expect(text).toMatch(/totalAtAskPln:\s*435\.67/); // 4.3567 * 100 = 435.67
+    expect(text).not.toContain("totalBuyPln");
+    expect(text).not.toContain("totalSellPln");
   });
 
   test("accepts a valid Table C currency absent from the old static map (e.g. HKD)", async () => {

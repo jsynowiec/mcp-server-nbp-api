@@ -162,8 +162,8 @@ export function registerExchangeTools(
             ...(amount !== undefined
               ? {
                   amount,
-                  totalBuyPln: round(amount * bid, 4),
-                  totalSellPln: round(amount * ask, 4),
+                  totalAtBidPln: round(amount * bid, 4),
+                  totalAtAskPln: round(amount * ask, 4),
                 }
               : {}),
           }),

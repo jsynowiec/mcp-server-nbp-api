@@ -85,8 +85,8 @@ export interface BidAskView {
   spread: number;
   effectiveDate: string;
   amount?: number;
-  totalBuyPln?: number;
-  totalSellPln?: number;
+  totalAtBidPln?: number;
+  totalAtAskPln?: number;
 }
 
 export function formatBidAsk(entry: BidAskView): string {
