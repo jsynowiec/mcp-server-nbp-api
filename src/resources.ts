@@ -3,6 +3,7 @@
 
 import type { NbpApiClient } from "#/nbp-api.js";
 import type { TableType } from "#/types.js";
+import { NbpApiError } from "#/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 const TABLES_METADATA = `NBP exchange-rate tables
@@ -61,16 +62,25 @@ export function registerResources(
         mimeType: "application/json",
       },
       async () => {
-        const currencies = await client.getCurrencies(table);
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: "application/json",
-              text: JSON.stringify(currencies),
-            },
-          ],
-        };
+        try {
+          const currencies = await client.getCurrencies(table);
+          return {
+            contents: [
+              {
+                uri,
+                mimeType: "application/json",
+                text: JSON.stringify(currencies),
+              },
+            ],
+          };
+        } catch (e) {
+          if (e instanceof NbpApiError) {
+            throw new Error(
+              `NBP API error fetching Table ${table} currencies: ${e.message}`,
+            );
+          }
+          throw e;
+        }
       },
     );
   }
