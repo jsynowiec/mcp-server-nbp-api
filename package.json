@@ -1,6 +1,6 @@
 {
   "name": "@jsynowiec/mcp-server-nbp-api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for the NBP (National Bank of Poland) Web API: exchange rates and gold prices.",
   "license": "MIT",
   "author": "Jakub Synowiec",
