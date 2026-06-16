@@ -122,9 +122,11 @@ describe("nbp://currencies/{table}", () => {
   test("NbpApiError from the client produces a descriptive error mentioning the table", async () => {
     installFetch(() => new Response("Not Found", { status: 404 }));
 
-    await expect(
-      pair.client.readResource({ uri: "nbp://currencies/A" }),
-    ).rejects.toThrow(/Table A/);
+    const result = await pair.client
+      .readResource({ uri: "nbp://currencies/A" })
+      .catch((e: unknown) => e);
+    expect(result).toBeInstanceOf(Error);
+    expect((result as Error).message).toMatch(/Table A/);
   });
 });
 

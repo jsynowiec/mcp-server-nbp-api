@@ -62,7 +62,8 @@ export function round(value: number, decimals: number): number {
 
 export function checkDates(
   ...entries: Array<
-    [string | undefined, string] | [string | undefined, string, string]
+    | [string | undefined, string]
+    | [string | undefined, string, string | undefined]
   >
 ): ToolResult | undefined {
   for (const [date, field, minDate] of entries) {

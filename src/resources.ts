@@ -77,6 +77,7 @@ export function registerResources(
           if (e instanceof NbpApiError) {
             throw new Error(
               `NBP API error fetching Table ${table} currencies: ${e.message}`,
+              { cause: e },
             );
           }
           throw e;
