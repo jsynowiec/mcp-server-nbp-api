@@ -254,8 +254,8 @@ export function registerRateTools(
       inputSchema: {
         currencies: z
           .array(currencyCodeSchema)
-          .min(1)
-          .max(10)
+          .min(1, "at least 1 currency code is required")
+          .max(10, "at most 10 currency codes are allowed")
           .describe(
             "Between 1 and 10 ISO 4217 currency codes (case-insensitive).",
           ),
