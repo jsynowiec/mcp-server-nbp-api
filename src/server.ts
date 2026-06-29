@@ -13,7 +13,7 @@ export interface ServerInfo {
   version: string;
 }
 
-const { name, version } = pkg;
+const { name, version } = pkg as ServerInfo;
 export const SERVER_INFO: ServerInfo = {
   name,
   version,
