@@ -2,6 +2,9 @@
 
 [![Sponsor][sponsor-badge]][sponsor]
 [![License][license-badge]][license]
+![NPM Version][npm-version]
+![NPM Downloads][npm-downloads]
+[![Socket][socket-badge]][socket-url]
 
 An MCP server that integrates the [Narodowy Bank Polski (NBP) Web API](https://api.nbp.pl/en.html), enabling natural language interaction with the datasets published by the NBP. Query current and historic exchange rates (mid rates and bid/ask spreads), gold prices, convert between currencies, compare currencies side-by-side, and analyse rate trends over time.
 
@@ -174,3 +177,7 @@ Released under the [MIT License][license].
 [license]: https://github.com/jsynowiec/mcp-server-nbp-api/blob/master/LICENSE
 [sponsor-badge]: https://img.shields.io/badge/♥-Sponsor-fc0fb5.svg
 [sponsor]: https://github.com/sponsors/jsynowiec
+[npm-version]: https://img.shields.io/npm/v/@jsynowiec/mcp-server-nbp-api
+[npm-downloads]: https://img.shields.io/npm/dm/@jsynowiec/mcp-server-nbp-api
+[socket-badge]: https://badge.socket.dev/npm/package/@jsynowiec/mcp-server-nbp-api/0.1.2
+[socket-url]: https://socket.dev/npm/package/@jsynowiec/mcp-server-nbp-api/overview/0.1.2
